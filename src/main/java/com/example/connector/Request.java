@@ -1,13 +1,14 @@
 package com.example.connector;
 
 
-import com.example.connector.http.Connector;
+import com.example.connector.http.HttpConnector;
+import io.netty.buffer.ByteBuf;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Socket;
+import java.util.Iterator;
 
 
 /**
@@ -43,15 +44,15 @@ public interface Request {
     /**
      * Return the Connector through which this Request was received.
      */
-    Connector getConnector();
+    HttpConnector getConnector();
 
 
     /**
      * Set the Connector through which this Request was received.
      *
-     * @param connector The new connector
+     * @param httpConnector The new connector
      */
-    void setConnector(Connector connector);
+    void setConnector(HttpConnector httpConnector);
 
 
     /**
@@ -106,7 +107,7 @@ public interface Request {
      * information about this Socket, such as the SSLSession associated with
      * an SSLSocket.
      */
-    Socket getSocket();
+//    Socket getSocket();
 
 
     /**
@@ -114,7 +115,7 @@ public interface Request {
      *
      * @param socket The socket through which this request was received
      */
-    void setSocket(Socket socket);
+//    void setSocket(Socket socket);
 
 
     /**
@@ -158,6 +159,8 @@ public interface Request {
      */
     ServletInputStream createInputStream() throws IOException;
 
+//    void setByteBuf(ByteBuf byteBuf);
+
 
     /**
      * Perform whatever actions are required to flush and close the input
@@ -174,7 +177,7 @@ public interface Request {
      *
      * @param name Name of the note to be returned
      */
-//    Object getNote(String name);
+    Object getNote(String name);
 
 
     /**
@@ -197,7 +200,7 @@ public interface Request {
      *
      * @param name Name of the note to be removed
      */
-//    void removeNote(String name);
+    void removeNote(String name);
 
 
 //    /**

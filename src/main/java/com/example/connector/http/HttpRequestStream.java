@@ -45,6 +45,9 @@ public class HttpRequestStream extends ServletInputStream {
         listeners.add (readListener);
     }
 
+    /**
+     * 这个方法多次read的话会多次触发notifyDone。。
+     */
     @Override
     public int read() throws IOException {
         if (isFinished ()) {
@@ -68,5 +71,10 @@ public class HttpRequestStream extends ServletInputStream {
                 }
             }
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        inputStream.close ();
     }
 }

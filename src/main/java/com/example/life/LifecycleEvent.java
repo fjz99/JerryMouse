@@ -35,7 +35,7 @@ public final class LifecycleEvent
     /**
      * The event type this instance represents.
      */
-    private final String type;
+    private final EventType type;
 
 
     /**
@@ -44,7 +44,7 @@ public final class LifecycleEvent
      * @param lifecycle Component on which this event occurred
      * @param type      Event type (required)
      */
-    public LifecycleEvent(Lifecycle lifecycle, String type) {
+    public LifecycleEvent(Lifecycle lifecycle, EventType type) {
 
         this (lifecycle, type, null);
 
@@ -58,7 +58,7 @@ public final class LifecycleEvent
      * @param type      Event type (required)
      * @param data      Event data (if any)
      */
-    public LifecycleEvent(Lifecycle lifecycle, String type, Object data) {
+    public LifecycleEvent(Lifecycle lifecycle, EventType type, Object data) {
 
         super (lifecycle);
         this.lifecycle = lifecycle;
@@ -93,7 +93,7 @@ public final class LifecycleEvent
     /**
      * Return the event type of this event.
      */
-    public String getType() {
+    public EventType getType() {
 
         return (this.type);
 

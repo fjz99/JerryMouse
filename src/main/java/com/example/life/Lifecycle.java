@@ -65,6 +65,8 @@
 package com.example.life;
 
 
+import java.util.List;
+
 /**
  * Common interface for component life cycle methods.  Catalina components
  * may, but are not required to, implement this interface (as well as the
@@ -74,49 +76,7 @@ package com.example.life;
  * @author Craig R. McClanahan
  * @version $Revision: 1.6 $ $Date: 2002/06/09 02:10:50 $
  */
-
 public interface Lifecycle {
-
-
-    // ----------------------------------------------------- Manifest Constants
-
-
-    /**
-     * The LifecycleEvent type for the "component start" event.
-     */
-    String START_EVENT = "start";
-
-
-    /**
-     * The LifecycleEvent type for the "component before start" event.
-     */
-    String BEFORE_START_EVENT = "before_start";
-
-
-    /**
-     * The LifecycleEvent type for the "component after start" event.
-     */
-    String AFTER_START_EVENT = "after_start";
-
-
-    /**
-     * The LifecycleEvent type for the "component stop" event.
-     */
-    String STOP_EVENT = "stop";
-
-
-    /**
-     * The LifecycleEvent type for the "component before stop" event.
-     */
-    String BEFORE_STOP_EVENT = "before_stop";
-
-
-    /**
-     * The LifecycleEvent type for the "component after stop" event.
-     */
-    String AFTER_STOP_EVENT = "after_stop";
-
-
     // --------------------------------------------------------- Public Methods
 
 
@@ -132,7 +92,7 @@ public interface Lifecycle {
      * Get the lifecycle listeners associated with this lifecycle. If this
      * Lifecycle has no listeners registered, a zero-length array is returned.
      */
-    LifecycleListener[] findLifecycleListeners();
+    List<LifecycleListener> findLifecycleListeners();
 
 
     /**
@@ -165,6 +125,5 @@ public interface Lifecycle {
      *  that needs to be reported
      */
     void stop() throws LifecycleException;
-
 
 }

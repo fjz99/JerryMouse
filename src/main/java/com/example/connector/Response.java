@@ -1,10 +1,9 @@
 package com.example.connector;
 
 
-import com.example.connector.http.Connector;
+import com.example.connector.http.HttpConnector;
 
 import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -31,15 +30,15 @@ public interface Response {
     /**
      * Return the Connector through which this Response is returned.
      */
-    Connector getConnector();
+    HttpConnector getConnector();
 
 
     /**
      * Set the Connector through which this Response is returned.
      *
-     * @param connector The new connector
+     * @param httpConnector The new connector
      */
-    void setConnector(Connector connector);
+    void setConnector(HttpConnector httpConnector);
 
 
     /**

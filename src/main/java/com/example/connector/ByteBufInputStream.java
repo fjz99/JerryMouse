@@ -2,6 +2,7 @@ package com.example.connector;
 
 import io.netty.buffer.ByteBuf;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -11,19 +12,31 @@ import java.io.InputStream;
  */
 public class ByteBufInputStream extends InputStream {
     protected ByteBuf byteBuf;//相当于缓冲区byte[]了
-
-    public ByteBuf getByteBuf() {
-        return byteBuf;
-    }
+    private boolean closed = false;
 
     public ByteBufInputStream(ByteBuf byteBuf) {
         this.byteBuf = byteBuf;
     }
 
+    public ByteBuf getByteBuf() {
+        return byteBuf;
+    }
+
     @Override
-    public int read() {
+    public int read() throws IOException {
+        if (closed) {
+            throw new IOException ("stream closed");
+        }
         if (byteBuf.readableBytes () > 0) {
             return byteBuf.readByte ();
         } else return -1;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (closed) {
+            throw new IOException ("stream closed");
+        }
+        closed = true;
     }
 }

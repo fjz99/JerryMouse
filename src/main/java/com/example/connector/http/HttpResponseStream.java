@@ -1,11 +1,11 @@
 package com.example.connector.http;
 
-import com.example.connector.ByteBufOutputStream;
 import com.example.connector.HttpResponse;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,10 +14,10 @@ import java.util.List;
  */
 public class HttpResponseStream extends ServletOutputStream {
     protected List<WriteListener> listeners = new ArrayList<> ();
-    protected ByteBufOutputStream outputStream;
+    protected OutputStream outputStream;
     protected HttpResponse response;
 
-    public HttpResponseStream(ByteBufOutputStream outputStream) {
+    public HttpResponseStream(OutputStream outputStream) {
         this.outputStream = outputStream;
     }
 
@@ -36,8 +36,16 @@ public class HttpResponseStream extends ServletOutputStream {
         outputStream.write (b);
     }
 
+    /**
+     * 刷新流没有意义，因为都存在byteBuf中了
+     */
     @Override
     public void flush() throws IOException {
-        super.flush ();
+
+    }
+
+    @Override
+    public void close() throws IOException {
+        outputStream.close ();
     }
 }

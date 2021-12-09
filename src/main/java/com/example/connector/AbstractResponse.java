@@ -1,6 +1,7 @@
 package com.example.connector;
 
-import com.example.connector.http.Connector;
+import com.example.connector.http.HttpConnector;
+import com.example.connector.http.HttpResponseStream;
 import com.example.util.StringManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -9,6 +10,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.Locale;
 
@@ -24,35 +26,64 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     protected ServletOutputStream servletOutputStream;
     protected OutputStream outputStream;//bytebuf 的
     protected long contentLength;
+
+    /**
+     * 似乎用不到，因为目前是byteBuf读满才发送的
+     */
+    @Deprecated
     protected boolean committed;//能关闭、刷新，也可以写，允许多次调用flush；？？？
+
     protected Locale locale = Locale.getDefault ();
-    protected Connector connector;
+    protected HttpConnector httpConnector;
     protected ByteBuf byteBuf;//负责维护buffer
     protected ChannelHandlerContext handlerContext;
     protected StringManager sm;
-    protected boolean suspended;//把输出流挂起，此时无法写，能关闭，无法刷新；？？？
+
+    /**
+     * 把输出流挂起，此时无法写，能关闭，无法刷新；？？？
+     * 防止sendErr，sendRedirect后还在写buf
+     * 使用静默，不抛出异常
+     */
+    protected boolean suspended;
     protected boolean err;
     protected PrintWriter writer;
 
-
     @Override
-    public Connector getConnector() {
-        return connector;
+    public int getBufferSize() {
+        return byteBuf.readableBytes ();
     }
 
     @Override
-    public void setConnector(Connector connector) {
-        this.connector = connector;
+    public void setBufferSize(int size) {
+        //do nothing
+    }
+
+    @Override
+    public HttpConnector getConnector() {
+        return httpConnector;
+    }
+
+    @Override
+    public void setConnector(HttpConnector httpConnector) {
+        this.httpConnector = httpConnector;
     }
 
     @Override
     public int getContentCount() {
-        return 0;
+        return byteBuf.readableBytes ();
     }
 
+    /**
+     * 和源码中不同
+     */
     @Override
     public boolean isCommitted() {
         return committed;
+    }
+
+    @Override
+    public void setCommitted(boolean appCommitted) {
+        this.committed = appCommitted;
     }
 
     /**
@@ -61,11 +92,8 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     @Override
     public void reset() {
         resetBuffer ();
-    }
-
-    @Override
-    public void setLocale(Locale loc) {
-        this.locale = loc;
+        outputStream = null;
+        writer = null;
     }
 
     @Override
@@ -74,8 +102,8 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     }
 
     @Override
-    public void setCommitted(boolean appCommitted) {
-
+    public void setLocale(Locale loc) {
+        this.locale = loc;
     }
 
     @Override
@@ -120,12 +148,29 @@ public abstract class AbstractResponse implements Response, ServletResponse {
 
     @Override
     public ServletOutputStream createOutputStream() throws IOException {
-        return null;
+        if (servletOutputStream == null) {
+            servletOutputStream = new HttpResponseStream (outputStream);
+        }
+        return servletOutputStream;
     }
 
+    /**
+     * 在复用resp之前调用
+     * 就关闭流释放资源即可，源码中还flush了，但我不用
+     */
     @Override
     public void finishResponse() throws IOException {
+        if (servletOutputStream != null) {
+            try {
+                servletOutputStream.close ();
+            } catch (IOException e) {
+                e.printStackTrace ();
+            }
+        }
 
+        if (writer != null) {
+            writer.close ();
+        }
     }
 
     @Override
@@ -134,23 +179,13 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     }
 
     @Override
+    public void setContentLength(int len) {
+        contentLength = len;
+    }
+
+    @Override
     public String getCharacterEncoding() {
         return encoding;
-    }
-
-    @Override
-    public String getContentType() {
-        return contentType;
-    }
-
-    @Override
-    public ServletOutputStream getOutputStream() throws IOException {
-        return null;
-    }
-
-    @Override
-    public PrintWriter getWriter() throws IOException {
-        return null;
     }
 
     @Override
@@ -159,18 +194,31 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     }
 
     @Override
-    public void setContentLength(int len) {
-        contentLength = len;
-    }
-
-    @Override
-    public void setContentLengthLong(long len) {
-        contentLength = len;
+    public String getContentType() {
+        return contentType;
     }
 
     @Override
     public void setContentType(String type) {
         contentType = type;
+    }
+
+    @Override
+    public ServletOutputStream getOutputStream() throws IOException {
+        return servletOutputStream;
+    }
+
+    @Override
+    public PrintWriter getWriter() throws IOException {
+        if (writer == null) {
+            writer = new PrintWriter (new OutputStreamWriter (outputStream));
+        }
+        return writer;
+    }
+
+    @Override
+    public void setContentLengthLong(long len) {
+        contentLength = len;
     }
 
     /**
@@ -197,7 +245,19 @@ public abstract class AbstractResponse implements Response, ServletResponse {
 
     @Override
     public PrintWriter getReporter() {
-        return null;
+        if (isError ()) {
+            try {
+                if (servletOutputStream == null) {
+                    createOutputStream ();
+                }
+            } catch (IOException e) {
+                e.printStackTrace ();
+                return null;
+            }
+            return new PrintWriter (servletOutputStream);//其实那个outputStream都无所谓，毕竟都是委托
+        } else {
+            throw new IllegalStateException ("不是err状态");
+        }
     }
 
     @Override
