@@ -4,6 +4,8 @@ package com.example.connector;
 import com.example.connector.Response;
 
 import javax.servlet.http.Cookie;
+import java.util.Collection;
+import java.util.Collections;
 
 
 /**
@@ -44,7 +46,7 @@ public interface HttpResponse
      * Return an array of all the header names set for this response, or
      * a zero-length array if no headers have been set.
      */
-    String[] getHeaderNames();
+    Collection<String> getHeaderNames();
 
 
     /**

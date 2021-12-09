@@ -117,7 +117,7 @@ public interface Response {
      * Return the <code>ServletResponse</code> for which this object
      * is the facade.
      */
-    ServletResponse getResponse();
+//    ServletResponse getResponse();
 
 
     /**
