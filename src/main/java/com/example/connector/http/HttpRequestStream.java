@@ -16,7 +16,7 @@ import java.util.List;
 public class HttpRequestStream extends ServletInputStream {
     protected InputStream inputStream;
     protected List<ReadListener> listeners;
-    protected int nextByte;
+    protected boolean done = false;
 
     public HttpRequestStream(InputStream inputStream) {
         this.inputStream = inputStream;
@@ -32,7 +32,7 @@ public class HttpRequestStream extends ServletInputStream {
      */
     @Override
     public boolean isFinished() {
-        return nextByte == -1;
+        return done;
     }
 
     @Override
@@ -51,11 +51,13 @@ public class HttpRequestStream extends ServletInputStream {
     @Override
     public int read() throws IOException {
         if (isFinished ()) {
-            notifyDone ();//再读一次才会触发
             return -1;
         } else {
-            int b = nextByte;
-            nextByte = inputStream.read ();
+            int b = inputStream.read ();
+            if (b == -1) {
+                done = true;
+                notifyDone ();
+            }
             return b;
         }
     }

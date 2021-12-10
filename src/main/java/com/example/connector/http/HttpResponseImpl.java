@@ -3,6 +3,7 @@ package com.example.connector.http;
 import com.example.connector.AbstractResponse;
 import com.example.connector.HttpResponse;
 import io.netty.handler.codec.http.*;
+import lombok.ToString;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -18,6 +19,7 @@ import static com.example.connector.http.Constants.DATE_TIME_FORMAT;
  *
  * @date 2021/12/8 20:26
  */
+@ToString
 public class HttpResponseImpl extends AbstractResponse implements HttpResponse, HttpServletResponse {
     protected static final TimeZone zone = TimeZone.getDefault ();
     private static final FullHttpResponse DEFAULT =
@@ -33,7 +35,12 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
      */
     protected String message;
 
-    protected HttpResponseStatus status;
+    protected HttpResponseStatus status = HttpResponseStatus.OK;
+    protected HttpConnector connector;
+
+    public HttpResponseImpl(HttpConnector connector) {
+        this.connector = connector;
+    }
 
     @Override
     public Cookie[] getCookies() {
@@ -237,12 +244,19 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
 
     @Override
     public void sendError(int sc, String msg) throws IOException {
-//        HttpResponseStatus.parseLine ()
+        if (isSuspended ()) {
+            throw new IllegalStateException ("suspend");
+        }
+
+        status = HttpResponseStatus.valueOf (sc);
+        message = msg;
+
+        setSuspended (true);
     }
 
     //具体由外部包装发送
     @Override
-    public void sendError(int sc) throws IOException {
+    public void sendError(int sc) {
         if (isSuspended ()) {
             throw new IllegalStateException ("suspend");
         }
@@ -341,8 +355,6 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
         }
 
         super.flushBuffer ();
-
-        //todo
     }
 
     /**

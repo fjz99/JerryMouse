@@ -48,6 +48,10 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     protected boolean err;
     protected PrintWriter writer;
 
+    public void setByteBuf(ByteBuf byteBuf) {
+        this.byteBuf = byteBuf;
+    }
+
     @Override
     public int getBufferSize() {
         return byteBuf.readableBytes ();

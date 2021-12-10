@@ -9,6 +9,7 @@ import javax.servlet.ServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+import java.util.Map;
 
 
 /**
@@ -257,6 +258,10 @@ public interface Request {
      */
     void setScheme(String scheme);
 
+
+    void setRemoteHost(String host);
+
+    void setParameterMap(Map<String, String[]> map);
 
     /**
      * Set the value to be returned by <code>isSecure()</code>

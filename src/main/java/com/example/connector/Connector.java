@@ -1,5 +1,6 @@
 package com.example.connector;
 
+import com.example.Container;
 import com.example.life.LifecycleException;
 
 import javax.net.ServerSocketFactory;
@@ -66,7 +67,7 @@ public interface Connector {
      * Return the Container used for processing requests received by this
      * Connector.
      */
-//    public Container getContainer();
+    public Container getContainer();
 
 
     /**
@@ -75,7 +76,7 @@ public interface Connector {
      *
      * @param container The new Container to use
      */
-//    public void setContainer(Container container);
+    public void setContainer(Container container);
 
 
     /**

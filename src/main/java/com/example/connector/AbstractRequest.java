@@ -2,6 +2,7 @@ package com.example.connector;
 
 import com.example.connector.http.HttpConnector;
 import com.example.connector.http.HttpRequestStream;
+import lombok.ToString;
 
 import javax.servlet.*;
 import java.io.*;
@@ -43,7 +44,6 @@ public abstract class AbstractRequest implements Request, ServletRequest {
      * https等
      */
     protected String scheme = "http";
-    protected Locale locale = Locale.getDefault ();
     protected String hostName;
     /**
      * 根据情况，可能返回ip或者hostname
@@ -62,7 +62,7 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     protected InputStream inputStream;
 
     protected BufferedReader reader;
-    protected long contentLength;
+    protected long contentLength = -1;
     protected String encoding;
 
     /**
@@ -88,6 +88,10 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     @Override
     public void setConnector(HttpConnector httpConnector) {
         this.httpConnector = httpConnector;
+    }
+
+    public void setParameterMap(Map<String, String[]> parameterMap) {
+        this.parameterMap = parameterMap;
     }
 
     /**
@@ -123,8 +127,7 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     public ServletInputStream createInputStream() {
         Objects.requireNonNull (inputStream);
         if (servletInputStream == null) {
-            servletInputStream = new HttpRequestStream (inputStream);
-            return servletInputStream;
+            return new HttpRequestStream (inputStream);
         } else {
             throw new IllegalStateException ("servletInputStream exists");
         }
@@ -142,17 +145,24 @@ public abstract class AbstractRequest implements Request, ServletRequest {
      */
     @Override
     public void finishRequest() throws IOException {
-        try {
-            servletInputStream.close ();//自动关闭里面的
-        } catch (IOException e) {
-            e.printStackTrace ();
+        //可能根本没读过
+        if (servletInputStream != null) {
+            try {
+                servletInputStream.close ();//自动关闭里面的
+            } catch (IOException e) {
+                e.printStackTrace ();
+            }
         }
 
-        try {
-            reader.close ();
-        } catch (IOException e) {
-            e.printStackTrace ();
+
+        if (reader != null) {
+            try {
+                reader.close ();
+            } catch (IOException e) {
+                e.printStackTrace ();
+            }
         }
+
     }
 
     /**
@@ -185,7 +195,6 @@ public abstract class AbstractRequest implements Request, ServletRequest {
         serverName = null;
         localPort = -1;
         servletInputStream = null;
-        locale = Locale.getDefault ();
     }
 
     /**
@@ -263,6 +272,12 @@ public abstract class AbstractRequest implements Request, ServletRequest {
 
     @Override
     public ServletInputStream getInputStream() throws IOException {
+        if (reader != null) {
+            throw new IOException ("有reader了");
+        }
+        if (servletInputStream == null) {
+            servletInputStream = createInputStream ();
+        }
         return servletInputStream;
     }
 
@@ -344,8 +359,8 @@ public abstract class AbstractRequest implements Request, ServletRequest {
 
     @Override
     public BufferedReader getReader() throws IOException {
-        if (inputStream != null)
-            throw new IllegalStateException ("getInputStream has been called.");
+        if (servletInputStream != null)
+            throw new IOException ("getInputStream has been called.");
         if (reader == null) {
             String encoding = getCharacterEncoding ();
             if (encoding == null)
@@ -368,6 +383,11 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     }
 
     @Override
+    public void setRemoteHost(String host) {
+        this.remoteHost = host;
+    }
+
+    @Override
     public void setAttribute(String name, Object o) {
         if (name == null) {
             throw new IllegalArgumentException ("attr name can not be null");
@@ -386,7 +406,9 @@ public abstract class AbstractRequest implements Request, ServletRequest {
 
     @Override
     public Locale getLocale() {
-        return locale;
+        if (locales.size () > 0)
+            return locales.get (0);
+        else return Locale.getDefault ();
     }
 
     /**

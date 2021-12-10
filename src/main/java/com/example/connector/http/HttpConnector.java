@@ -1,10 +1,12 @@
 package com.example.connector.http;
 
+import com.example.Container;
 import com.example.connector.Connector;
 import com.example.connector.Request;
 import com.example.connector.Response;
 import com.example.life.*;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -12,6 +14,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.util.AsciiString;
 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,12 +27,22 @@ public class HttpConnector implements Connector, Lifecycle {
     private final LifeCycleSupport lifeCycleSupport = new LifeCycleSupport (this);
     private final int port = 8080;
     private final String info = "com.example.connector.http.HttpConnector：一个 http connector";
+    private final List<HttpProcessor> runningProcessors = new ArrayList<> ();
+    private Container container;
     private String scheme = "http";
     private boolean secure = false;
     private ChannelFuture future;
     private NioEventLoopGroup group;
-    private Map<String, HttpProcessor> runningProcessors = new ConcurrentHashMap<> ();
     private boolean started;//fixme start是同步调用还是异步？
+
+    public Container getContainer() {
+        return container;
+    }
+
+    @Override
+    public void setContainer(Container container) {
+        this.container = container;
+    }
 
     @Override
     public void addLifecycleListener(LifecycleListener listener) {
@@ -62,7 +76,6 @@ public class HttpConnector implements Connector, Lifecycle {
                 .childHandler (new ChannelInitializer<SocketChannel> () {
                     @Override
                     public void initChannel(SocketChannel ch) {
-                        System.out.println ("initChannel ch:" + ch);
                         ch.pipeline () //内部是分类型有序的！
                                 .addLast ("decoder", new HttpRequestDecoder ())
                                 .addLast ("encoder", new HttpResponseEncoder ())
@@ -97,13 +110,15 @@ public class HttpConnector implements Connector, Lifecycle {
         group.shutdownGracefully ();
 
         //关闭所有子组件;因为是组合关系
-        for (Map.Entry<String, HttpProcessor> entry : runningProcessors.entrySet ()) {
-            entry.getValue ().stop ();
+        //copy一份，防止被processor组件修改
+        final List<HttpProcessor> processors = new ArrayList<> (runningProcessors);
+        for (HttpProcessor runningProcessor : processors) {
+            runningProcessor.stop ();
         }
         System.out.println ("connector shutdown");
     }
 
-    public void finishProcess(HttpProcessor processor) {
+    public void removeProcessor(HttpProcessor processor) {
         runningProcessors.remove (processor);
     }
 
@@ -153,19 +168,24 @@ public class HttpConnector implements Connector, Lifecycle {
 
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
-            System.out.println ("class:" + msg.getClass ().getName ());
-            System.out.println (msg.content ());
+            System.out.println ("content " + msg.content ().toString (Charset.defaultCharset ()));
             //交给processor处理,直接同步执行即可
             //仅仅处理一次http请求
             //fixme 先不池化
             HttpProcessor processor = new HttpProcessor (HttpConnector.this);
-//            runningProcessors.add (processor);
+            //先启动
+            try {
+                processor.start ();
+            } catch (LifecycleException e) {
+                e.printStackTrace ();
+            }
+            runningProcessors.add (processor);
             processor.process (msg, ctx);
         }
 
         @Override
         public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-            System.out.println ("channelReadComplete:close tcp connection");
+            super.channelReadComplete (ctx);
             ctx.flush ();
         }
 

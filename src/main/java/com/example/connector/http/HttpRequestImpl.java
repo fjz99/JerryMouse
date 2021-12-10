@@ -4,6 +4,7 @@ import com.example.connector.AbstractRequest;
 import com.example.connector.Connector;
 import com.example.connector.HttpRequest;
 import com.example.util.RequestUtil;
+import lombok.ToString;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -13,13 +14,13 @@ import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-//todo 添加locale
 
 /**
  * 目前只有1.1版本
  *
  * @date 2021/12/8 20:22
  */
+@ToString
 public class HttpRequestImpl extends AbstractRequest implements HttpRequest, HttpServletRequest {
     protected final Connector connector;
     protected Map<String, List<String>> headers = new ConcurrentHashMap<> ();
