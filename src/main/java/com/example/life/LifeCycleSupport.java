@@ -7,6 +7,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 可能被多个线程add
+ * 事实上，目前的事件比较少，不论是add listener还是触发event都很少
+ * 所以怎么同步都行
  *
  * @date 2021/12/9 12:56
  */
