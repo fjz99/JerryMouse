@@ -5,15 +5,12 @@ import com.example.life.LifecycleException;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import javax.servlet.ServletException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class HttpConnectorTest {
@@ -37,6 +34,8 @@ class HttpConnectorTest {
                 writer.write (s);
             }
             writer.flush ();
+            argument.headers.forEach ((k, v) ->
+                    writer.write (String.format ("%s : %s\n", k, v)));
             return null;
         }).when (container).invoke (any (), any ());
         connector.setContainer (container);

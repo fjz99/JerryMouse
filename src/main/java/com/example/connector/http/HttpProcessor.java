@@ -84,11 +84,11 @@ public final class HttpProcessor implements Lifecycle {
             } catch (Exception e) {
                 e.printStackTrace ();
                 response.sendError (HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                ok = false;
             }
         }
-        doSend ();
 
+        //先关闭流，这样缓冲区的byte都会完全写入byteBuf fixme
+        //即用户不一定会flush，这样close的时候会自动flush
         try {
             response.finishResponse ();
         } catch (Throwable e) {
@@ -102,6 +102,8 @@ public final class HttpProcessor implements Lifecycle {
             e.printStackTrace ();
             System.out.println ("process.invoke " + e);
         }
+
+        doSend ();
 
         recycle ();
     }
