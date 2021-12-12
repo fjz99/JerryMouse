@@ -6,8 +6,6 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import java.time.format.DateTimeFormatter;
 
 /**
- * todo err status
- *
  * @date 2021/12/8 19:52
  */
 public final class Constants {
@@ -27,4 +25,5 @@ public final class Constants {
     public static final String KEEP_ALIVE = HttpHeaderValues.KEEP_ALIVE.toString ();
     public static final String CLOSE = HttpHeaderValues.CLOSE.toString ();
     public static final String APPLICATION_JSON = HttpHeaderValues.APPLICATION_JSON.toString ();
+    public static final String LOCATION = HttpHeaderNames.LOCATION.toString ();
 }

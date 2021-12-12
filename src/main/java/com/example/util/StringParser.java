@@ -51,7 +51,7 @@ public final class StringParser {
      * when the string is first specified to speed up access to characters
      * being compared during parsing.
      */
-    private char chars[] = null;
+    private char[] chars = null;
 
 
     /**

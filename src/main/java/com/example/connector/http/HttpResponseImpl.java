@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.example.connector.http.Constants.DATE_TIME_FORMAT;
+import static com.example.connector.http.Constants.LOCATION;
 
 /**
  * 目前只有1.1版本
@@ -275,6 +276,7 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
         status = HttpResponseStatus.FOUND;//302 本来叫Moved Temporarily
 //        fullHttpResponse.setStatus (status);
 //        fullHttpResponse.headers ().set ("location", location);
+        setHeader (LOCATION, location);
 
 
         setSuspended (true);

@@ -377,11 +377,6 @@ public final class RequestUtil {
 
     /**
      * Put name value pair in map.
-     *
-     * @param b the character value byte
-     *          <p>
-     *          Put name and value pair in map.  When name already exist, add value
-     *          to array of values.
      */
     private static void putMapEntry(Map<String, String[]> map, String name, String value) {
         String[] newValues;
