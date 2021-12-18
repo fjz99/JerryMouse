@@ -235,7 +235,7 @@ public final class RequestUtil {
                     String value = token.substring (equals + 1).trim ();
                     cookies.add (new Cookie (name, value));
                 }
-            } catch (Throwable e) {
+            } catch (Throwable ignored) {
 
             }
         }
@@ -256,8 +256,8 @@ public final class RequestUtil {
      * where the name or value includes an encoded "=" or "&" character
      * that would otherwise be interpreted as a delimiter.
      *
-     * @param map           Map that accumulates the resulting parameters
-     * @param data          Input string containing request parameters
+     * @param map  Map that accumulates the resulting parameters
+     * @param data Input string containing request parameters
      * @throws IllegalArgumentException if the data is malformed
      */
     public static void parseParameters(Map<String, String[]> map, String data, String encoding)

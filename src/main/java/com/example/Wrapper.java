@@ -137,7 +137,7 @@ public interface Wrapper extends Container {
      *
      * @param listener The new listener
      */
-    void addInstanceListener(InstanceListener listener);
+//    void addInstanceListener(InstanceListener listener);
 
 
     /**
@@ -146,7 +146,6 @@ public interface Wrapper extends Container {
      *
      * @param name Role name used within this servlet
      * @param link Role name used within the web application
-     * @param description Description of this security role reference
      */
     void addSecurityReference(String name, String link);
 
@@ -237,7 +236,7 @@ public interface Wrapper extends Container {
      *
      * @param listener The listener to remove
      */
-    void removeInstanceListener(InstanceListener listener);
+//    void removeInstanceListener(InstanceListener listener);
 
 
     /**

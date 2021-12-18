@@ -30,6 +30,7 @@ public final class LifeCycleSupport {
         listeners.remove (listener);
     }
 
+    //保护性拷贝
     public List<LifecycleListener> getListeners() {
         return Collections.unmodifiableList (new ArrayList<> (listeners));
     }

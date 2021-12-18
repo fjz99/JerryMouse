@@ -3,6 +3,7 @@ package com.example;
 
 import com.example.connector.Request;
 import com.example.connector.Response;
+import com.example.logger.Logger;
 import sun.security.krb5.Realm;
 
 import javax.naming.directory.DirContext;
