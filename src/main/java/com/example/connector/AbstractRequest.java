@@ -2,7 +2,6 @@ package com.example.connector;
 
 import com.example.connector.http.HttpConnector;
 import com.example.connector.http.HttpRequestStream;
-import lombok.ToString;
 
 import javax.servlet.*;
 import java.io.*;
@@ -144,7 +143,7 @@ public abstract class AbstractRequest implements Request, ServletRequest {
      * 然后就会关闭这个tcp连接了
      */
     @Override
-    public void finishRequest() throws IOException {
+    public void finishRequest() {
         //可能根本没读过
         if (servletInputStream != null) {
             try {

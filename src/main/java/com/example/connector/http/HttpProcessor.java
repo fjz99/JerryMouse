@@ -143,10 +143,10 @@ public final class HttpProcessor extends LifeCycleBase {
                     reqBuf.clear ();
                 }
             } else if (key.equalsIgnoreCase (ACCEPT_LANGUAGE)) {
-                //cookie
                 parseAcceptLanguage (value);
             } else if (key.equalsIgnoreCase (COOKIE)) {
-                Cookie[] cookies = RequestUtil.parseCookieHeader (value);
+                //cookie
+                List<Cookie> cookies = RequestUtil.parseCookieHeader (value);
                 for (Cookie cookie : cookies) {
 //                    todo session
 //                    if (cookie.getName ().equals

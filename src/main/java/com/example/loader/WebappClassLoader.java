@@ -24,11 +24,10 @@ import static com.example.loader.Constants.WEB_INF_CLASSES_LOCATION;
 import static com.example.loader.Constants.WEB_INF_LIB_LOCATION;
 
 /**
- * 线程安全的类加载器
- * 外部提供的路径必须是平台相关的，即必须是对应的/或者\
- * 这个类可能被继承
- * <p>
- * todo filter实现
+ * 线程安全的类加载器<p>
+ * 外部提供的路径必须是平台相关的，即必须是对应的/或者\<p>
+ * 这个类可能被继承<p>
+ * todo filter实现 <p>
  * todo notFoundResources在jar，repository等改变的时候会错误，仍然认为找不到
  *
  * @date 2021/12/18 16:10
@@ -164,7 +163,7 @@ public class WebappClassLoader
         Collection<Object> list = resourceContext.list (jarPath);
         if (list == null) {
             //合法的
-            System.out.println (jarPath + " 不存在");
+            log.warn (jarPath + " 不存在");
             return;
         }
 

@@ -4,6 +4,7 @@ import javax.servlet.http.Cookie;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -55,7 +56,6 @@ public final class RequestUtil {
             buf.append ("\"");
         }
 
-        long age = cookie.getMaxAge ();
         if (cookie.getMaxAge () >= 0) {
             buf.append ("; Max-Age=\"");
             buf.append (cookie.getMaxAge ());
@@ -94,11 +94,11 @@ public final class RequestUtil {
         if (message == null)
             return (null);
 
-        char content[] = new char[message.length ()];
+        char[] content = new char[message.length ()];
         message.getChars (0, message.length (), content, 0);
-        StringBuffer result = new StringBuffer (content.length + 50);
-        for (int i = 0; i < content.length; i++) {
-            switch (content[i]) {
+        StringBuilder result = new StringBuilder (content.length + 50);
+        for (char c : content) {
+            switch (c) {
                 case '<':
                     result.append ("&lt;");
                     break;
@@ -112,7 +112,7 @@ public final class RequestUtil {
                     result.append ("&quot;");
                     break;
                 default:
-                    result.append (content[i]);
+                    result.append (c);
             }
         }
         return (result.toString ());
@@ -211,12 +211,12 @@ public final class RequestUtil {
      *
      * @param header Value of an HTTP "Cookie" header
      */
-    public static Cookie[] parseCookieHeader(String header) {
+    public static List<Cookie> parseCookieHeader(String header) {
 
         if ((header == null) || (header.length () < 1))
-            return (new Cookie[0]);
+            return new ArrayList<> ();
 
-        ArrayList<Cookie> cookies = new ArrayList<> ();
+        List<Cookie> cookies = new ArrayList<> ();
         while (header.length () > 0) {
             int semicolon = header.indexOf (';');
             if (semicolon < 0)
@@ -240,7 +240,7 @@ public final class RequestUtil {
             }
         }
 
-        return cookies.toArray (new Cookie[0]);
+        return cookies;
 
     }
 

@@ -83,7 +83,7 @@ public class WebappLoader extends LifeCycleBase
         super.stop ();
 
         if (classLoader != null)
-            ((Lifecycle) classLoader).stop ();
+            ((Lifecycle) classLoader).stop ();//这样可以复用classLoader
         classLoader = null;
     }
 
