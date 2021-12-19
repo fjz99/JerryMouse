@@ -12,6 +12,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.util.AsciiString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.List;
 /**
  * @date 2021/12/8 19:55
  */
+@Slf4j
 public class HttpConnector extends LifeCycleBase implements Connector {
     private final int port = 8080;
     private final String info = "com.example.connector.http.HttpConnector：一个 http connector";
@@ -70,7 +72,7 @@ public class HttpConnector extends LifeCycleBase implements Connector {
             future.channel ().closeFuture ().sync (); // 例子里没有这行代码 会导致服务器直接退出
         } catch (InterruptedException e) {
             e.printStackTrace ();
-            System.out.println ("err shutdown");
+            log.error ("err shutdown");
         }
     }
 
@@ -87,7 +89,7 @@ public class HttpConnector extends LifeCycleBase implements Connector {
         for (HttpProcessor runningProcessor : processors) {
             runningProcessor.stop ();
         }
-        System.out.println ("connector shutdown");
+        log.error ("connector shutdown");
     }
 
     public void removeProcessor(HttpProcessor processor) {
@@ -140,7 +142,6 @@ public class HttpConnector extends LifeCycleBase implements Connector {
 
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
-            System.out.println ("content " + msg.content ().toString (Charset.defaultCharset ()));
             //交给processor处理,直接同步执行即可
             //仅仅处理一次http请求
             //fixme 先不池化
@@ -163,7 +164,7 @@ public class HttpConnector extends LifeCycleBase implements Connector {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            System.out.println ("exceptionCaught");
+            log.error ("exceptionCaught");
             if (null != cause) cause.printStackTrace ();
             if (null != ctx) ctx.close ();
         }

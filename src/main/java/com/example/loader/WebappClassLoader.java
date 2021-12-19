@@ -4,8 +4,11 @@ import com.example.life.*;
 import com.example.resource.AbstractContext;
 import com.example.resource.FileDirContext;
 import com.example.resource.ResourceAttributes;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +37,7 @@ import static com.example.loader.Constants.WEB_INF_LIB_LOCATION;
 public class WebappClassLoader
         extends URLClassLoader
         implements Reloader, Lifecycle {
+    private static final Logger log = LoggerFactory.getLogger (WebappClassLoader.class);
 
     /**
      * 找不到的资源，下次再找也找不到，加快速度。
@@ -156,7 +160,7 @@ public class WebappClassLoader
         }
 
         addRepositoryInternal (WEB_INF_CLASSES_LOCATION);
-        System.out.println ("添加Class Repository：" + WEB_INF_CLASSES_LOCATION);
+        log.info ("添加Class Repository：" + WEB_INF_CLASSES_LOCATION);
 
         Collection<Object> list = resourceContext.list (jarPath);
         if (list == null) {
@@ -173,7 +177,6 @@ public class WebappClassLoader
                     String fileName = file.getName ();
 
                     addJar (fileName, new JarFile (file), file);
-                    System.out.println ("添加Jar Repository：" + fileName);
                 } catch (IOException e) {
                     e.printStackTrace ();
                 }
@@ -225,8 +228,10 @@ public class WebappClassLoader
             URL url = new URL (repository);
             super.addURL (url); //父类的这个方法是线程安全的
             hasExternalRepositories = true;
+            log.info ("添加外部资源 {}", repository);
         } catch (MalformedURLException e) {
             e.printStackTrace ();
+            log.error ("添加外部资源 {} 失败", repository);
         }
     }
 
@@ -283,7 +288,7 @@ public class WebappClassLoader
         jarRepositories.put (name, jarRepository);
 
         //todo 验证jar包中是否含有黑名单的类
-
+        log.info ("添加jar {}", file.getPath ());
     }
 
     /**
@@ -321,10 +326,6 @@ public class WebappClassLoader
         classRepository.pathName = repository;
 
         classRepositories.add (classRepository);
-    }
-
-    private boolean validatePath(File file) {
-        return file.exists () && file.canRead () && file.isDirectory ();
     }
 
     @Override
@@ -465,6 +466,7 @@ public class WebappClassLoader
         if (resourceEntry == null) {
             //找不到
             notFoundResources.add (name);
+            log.debug ("定位不到资源 {}", name);
             return null;
         }
 
@@ -488,6 +490,7 @@ public class WebappClassLoader
                 }
             }
         }
+        log.debug ("定位到resource {}", resourceEntries.get (name));
         return resourceEntries.get (name);
     }
 
@@ -574,6 +577,7 @@ public class WebappClassLoader
 
     @Override
     public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        log.info ("类加载 {}", name);
         //判断缓存是否存在
         Class<?> clazz = findLoadedClass0 (name);
         if (clazz != null) {
@@ -661,6 +665,7 @@ public class WebappClassLoader
             }
         }
 
+        log.error ("类 {} 加载失败", name);
         throw new ClassNotFoundException (name);
     }
 

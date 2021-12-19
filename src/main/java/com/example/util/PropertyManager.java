@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 实现配置功能
- * 配置包括一个命名空间（即第一个.之前的字符串），key，defaultValue，value
+ * 配置包括key，defaultValue，value
  * 可以由外部properties读取
  * 例如外部的key为log.level,log.prefix等
  * <p>

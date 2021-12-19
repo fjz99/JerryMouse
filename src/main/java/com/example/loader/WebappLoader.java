@@ -4,6 +4,7 @@ import com.example.Context;
 import com.example.life.LifeCycleBase;
 import com.example.life.Lifecycle;
 import com.example.life.LifecycleException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -24,6 +25,7 @@ import static com.example.loader.Constants.WEB_INF_LIB_LOCATION;
  *
  * @date 2021/12/19 10:13
  */
+@Slf4j
 public class WebappLoader extends LifeCycleBase
         implements Loader, PropertyChangeListener {
 
@@ -67,11 +69,11 @@ public class WebappLoader extends LifeCycleBase
             classLoader.start ();
         } catch (LifecycleException e) {
             e.printStackTrace ();
-            System.out.println ("classLoader start失败");
+            log.error ("classLoader start失败");
             throw new LifecycleException (e);
         } catch (Exception e) {
             e.printStackTrace ();
-            System.out.println ("classLoader创建失败");
+            log.error ("classLoader创建失败");
             throw new LifecycleException (e);
         }
     }

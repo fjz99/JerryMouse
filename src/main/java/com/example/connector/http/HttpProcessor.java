@@ -2,19 +2,18 @@ package com.example.connector.http;
 
 import com.example.connector.ByteBufInputStream;
 import com.example.connector.ByteBufOutputStream;
-import com.example.life.*;
+import com.example.life.LifeCycleBase;
 import com.example.util.RequestUtil;
 import com.example.util.StringParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.MemoryAttribute;
-import io.netty.util.AsciiString;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -25,14 +24,12 @@ import java.util.*;
 
 import static com.example.connector.http.Constants.*;
 
-import static com.example.connector.http.Constants.DATE_TIME_FORMATTER;
-import static com.example.connector.http.Constants.SERVER_INFO;
-
 /**
  * HttpProcessor内部是单线程的，Connector会保证HttpProcessor会被单线程访问
  *
  * @date 2021/12/8 19:55
  */
+@Slf4j
 public final class HttpProcessor extends LifeCycleBase {
 
     private final StringParser parser = new StringParser ();
@@ -59,6 +56,7 @@ public final class HttpProcessor extends LifeCycleBase {
      * connection的close netty会自动处理
      */
     public void process(FullHttpRequest r, ChannelHandlerContext handlerContext) {
+        log.info ("处理请求 {}", r);
         boolean ok = true;
 
         prepareProcess (r, handlerContext);
@@ -92,14 +90,14 @@ public final class HttpProcessor extends LifeCycleBase {
             response.finishResponse ();
         } catch (Throwable e) {
             e.printStackTrace ();
-            System.out.println ("process.invoke " + e);
+            log.error ("response process.invoke " + e);
         }
 
         try {
             request.finishRequest ();
         } catch (Throwable e) {
             e.printStackTrace ();
-            System.out.println ("process.invoke " + e);
+            log.error ("request process.invoke " + e);
         }
 
         doSend ();
@@ -178,7 +176,7 @@ public final class HttpProcessor extends LifeCycleBase {
         RequestUtil.parseParameters (map, request.getQueryString (), "utf-8");
         request.setParameterMap (map);
 
-        System.out.printf ("装填header后为 %s\n", request);
+        log.debug ("装填headers后为 {}", request.headers);
     }
 
     /**
@@ -323,7 +321,7 @@ public final class HttpProcessor extends LifeCycleBase {
         request.setConnector (connector);
         request.setStream (new ByteBufInputStream (reqBuf));
 
-        System.out.printf ("装填请求后为 %s\n", request);
+        log.trace ("装填请求后为 {}", request);
     }
 
     /**
@@ -336,7 +334,7 @@ public final class HttpProcessor extends LifeCycleBase {
 
         setDefaultHeaders ();
 
-        System.out.printf ("prepareResponse后为 %s\n", request);
+        log.trace ("prepareResponse后为 {}", request);
     }
 
     /**
@@ -377,7 +375,8 @@ public final class HttpProcessor extends LifeCycleBase {
 
         handlerContext.writeAndFlush (fullHttpResponse);
 
-        System.out.printf ("发送响应 %s 结束\n", response);
+        log.info ("发送响应结束,status={}", response.getStatus ());
+        log.debug ("响应headers = {}", response.headers);
     }
 
     private void parseCookieToHeader(HttpHeaders respHeaders) {
