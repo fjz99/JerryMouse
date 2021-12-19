@@ -4,8 +4,8 @@ package com.example;
 import com.example.connector.Request;
 import com.example.connector.Response;
 import com.example.loader.Loader;
-import com.example.logger.Logger;
 import com.example.resource.AbstractContext;
+import com.example.session.Manager;
 import sun.security.krb5.Realm;
 
 import javax.naming.directory.DirContext;
@@ -142,20 +142,20 @@ public interface Container {
     void setLoader(Loader loader);
 
 
-    /**
-     * Return the Logger with which this Container is associated.  If there is
-     * no associated Logger, return the Logger associated with our parent
-     * Container (if any); otherwise return <code>null</code>.
-     */
-    Logger getLogger();
-
-
-    /**
-     * Set the Logger with which this Container is associated.
-     *
-     * @param logger The newly associated Logger
-     */
-    void setLogger(Logger logger);
+//    /**
+//     * Return the Logger with which this Container is associated.  If there is
+//     * no associated Logger, return the Logger associated with our parent
+//     * Container (if any); otherwise return <code>null</code>.
+//     */
+//    Logger getLogger();
+//
+//
+//    /**
+//     * Set the Logger with which this Container is associated.
+//     *
+//     * @param logger The newly associated Logger
+//     */
+//    void setLogger(Logger logger);
 
 
     /**

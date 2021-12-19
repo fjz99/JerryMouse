@@ -1,4 +1,4 @@
-package com.example;
+package com.example.session;
 
 
 
@@ -17,7 +17,7 @@ public interface SessionListener {
      *
      * @param event SessionEvent that has occurred
      */
-    public void sessionEvent(SessionEvent event);
+    void sessionEvent(SessionEvent event);
 
 
 }

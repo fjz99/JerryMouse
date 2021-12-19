@@ -4,7 +4,6 @@ import com.example.life.*;
 import com.example.resource.AbstractContext;
 import com.example.resource.FileDirContext;
 import com.example.resource.ResourceAttributes;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;

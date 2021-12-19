@@ -1,4 +1,4 @@
-package com.example;
+package com.example.session;
 
 
 import javax.servlet.http.HttpSession;
@@ -16,10 +16,6 @@ import java.util.Iterator;
  */
 
 public interface Session {
-
-
-    // ----------------------------------------------------- Manifest Constants
-
 
     /**
      * The SessionEvent event type when a session is created.

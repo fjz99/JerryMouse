@@ -1,4 +1,4 @@
-package com.example;
+package com.example.session;
 
 
 import java.util.EventObject;
@@ -18,19 +18,19 @@ public final class SessionEvent
     /**
      * The event data associated with this event.
      */
-    private Object data = null;
+    private final Object data;
 
 
     /**
      * The Session on which this event occurred.
      */
-    private Session session = null;
+    private final Session session;
 
 
     /**
      * The event type this instance represents.
      */
-    private String type = null;
+    private final String type;
 
 
     /**

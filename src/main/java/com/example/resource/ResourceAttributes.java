@@ -13,12 +13,6 @@ import java.util.Locale;
  */
 public class ResourceAttributes {
 
-
-    // -------------------------------------------------------------- Constants
-
-
-    // Default attribute names
-
     /**
      * Creation date.
      */
@@ -114,8 +108,6 @@ public class ResourceAttributes {
             new SimpleDateFormat ("EEE MMMM d HH:mm:ss yyyy", Locale.getDefault ())
     };
 
-
-    // ----------------------------------------------------------- Constructors
     /**
      * Collection flag.
      */
@@ -125,8 +117,6 @@ public class ResourceAttributes {
      */
     protected long contentLength = -1;
 
-
-    // ----------------------------------------------------- Instance Variables
     /**
      * Creation time.
      */
@@ -147,9 +137,6 @@ public class ResourceAttributes {
      * Name.
      */
     protected String name = null;
-
-
-    // ------------------------------------------------------------- Properties
 
     /**
      * Is collection.
@@ -347,9 +334,6 @@ public class ResourceAttributes {
     public void setResourceType(String resourceType) {
         collection = resourceType.equals (COLLECTION_TYPE);
     }
-
-
-    // ----------------------------------------------------- Attributes Methods
 
     /**
      * Get attribute.
