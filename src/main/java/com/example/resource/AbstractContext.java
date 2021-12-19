@@ -36,6 +36,8 @@ public abstract class AbstractContext {
 
     /**
      * 获得所有的file和dir
+     *
+     * @param path 某个目录下,例如/WEB-INF/lib,必须是doc base为work dir的路径
      */
-    public abstract Collection<Object> list();
+    public abstract Collection<Object> list(String path);
 }

@@ -1,42 +1,32 @@
-//package com.example;
-//
-//
-//import org.apache.catalina.deploy.*;
-//import org.apache.catalina.util.CharsetMapper;
-//
-//import javax.servlet.ServletContext;
-//
-//
-///**
-// * A <b>Context</b> is a Container that represents a servlet context, and
-// * therefore an individual web application, in the Catalina servlet engine.
-// * It is therefore useful in almost every deployment of Catalina (even if a
-// * Connector attached to a web server (such as Apache) uses the web server's
-// * facilities to identify the appropriate Wrapper to handle this request.
-// * It also provides a convenient mechanism to use Interceptors that see
-// * every request processed by this particular web application.
-// * <p>
-// * The parent Container attached to a Context is generally a Host, but may
-// * be some other implementation, or may be omitted if it is not necessary.
-// * <p>
-// * The child containers attached to a Context are generally implementations
-// * of Wrapper (representing individual servlet definitions).
-// * <p>
-// *
-// * @author Craig R. McClanahan
-// * @version $Revision: 1.21 $ $Date: 2002/05/12 01:22:18 $
-// */
-//
-//public interface Context extends Container {
-//
-//
-//    // ----------------------------------------------------- Manifest Constants
-//
-//
-//    /**
-//     * The LifecycleEvent type sent when a context is reloaded.
-//     */
-//    String RELOAD_EVENT = "reload";
+package com.example;
+
+
+/**
+ * A <b>Context</b> is a Container that represents a servlet context, and
+ * therefore an individual web application, in the Catalina servlet engine.
+ * It is therefore useful in almost every deployment of Catalina (even if a
+ * Connector attached to a web server (such as Apache) uses the web server's
+ * facilities to identify the appropriate Wrapper to handle this request.
+ * It also provides a convenient mechanism to use Interceptors that see
+ * every request processed by this particular web application.
+ * <p>
+ * The parent Container attached to a Context is generally a Host, but may
+ * be some other implementation, or may be omitted if it is not necessary.
+ * <p>
+ * The child containers attached to a Context are generally implementations
+ * of Wrapper (representing individual servlet definitions).
+ * <p>
+ *
+ * @author Craig R. McClanahan
+ * @version $Revision: 1.21 $ $Date: 2002/05/12 01:22:18 $
+ */
+
+public interface Context extends Container {
+
+    /**
+     * The LifecycleEvent type sent when a context is reloaded.
+     */
+    String RELOAD_EVENT = "reload";
 //
 //
 //    // ------------------------------------------------------------- Properties
@@ -237,18 +227,18 @@
 //    void setPublicId(String publicId);
 //
 //
-//    /**
-//     * Return the reloadable flag for this web application.
-//     */
-//    boolean getReloadable();
-//
-//
-//    /**
-//     * Set the reloadable flag for this web application.
-//     *
-//     * @param reloadable The new reloadable flag
-//     */
-//    void setReloadable(boolean reloadable);
+    /**
+     * Return the reloadable flag for this web application.
+     */
+    boolean getReloadable();
+
+
+    /**
+     * Set the reloadable flag for this web application.
+     *
+     * @param reloadable The new reloadable flag
+     */
+    void setReloadable(boolean reloadable);
 //
 //
 //    /**
@@ -826,13 +816,13 @@
 //    String[] findWrapperListeners();
 //
 //
-//    /**
-//     * Reload this web application, if reloading is supported.
-//     *
-//     * @throws IllegalStateException if the <code>reloadable</code>
-//     *                               property is set to <code>false</code>.
-//     */
-//    void reload();
+    /**
+     * Reload this web application, if reloading is supported.
+     *
+     * @throws IllegalStateException if the <code>reloadable</code>
+     *                               property is set to <code>false</code>.
+     */
+    void reload();
 //
 //
 //    /**
@@ -1022,4 +1012,4 @@
 //    void removeWrapperListener(String listener);
 //
 //
-//}
+}

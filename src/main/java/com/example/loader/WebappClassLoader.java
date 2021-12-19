@@ -5,6 +5,7 @@ import com.example.resource.AbstractContext;
 import com.example.resource.FileDirContext;
 import com.example.resource.ResourceAttributes;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,9 +18,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import static com.example.loader.Constants.WEB_INF_CLASSES_LOCATION;
+import static com.example.loader.Constants.WEB_INF_LIB_LOCATION;
+
 /**
  * 线程安全的类加载器
  * 外部提供的路径必须是平台相关的，即必须是对应的/或者\
+ * 这个类可能被继承
+ * <p>
  * todo filter实现
  * todo notFoundResources在jar，repository等改变的时候会错误，仍然认为找不到
  *
@@ -133,18 +139,52 @@ public class WebappClassLoader
         lifeCycleSupport.removeLifecycleListener (listener);
     }
 
+    /**
+     * 会自己添加WEB-INF/classes和WEB-INF/lib
+     */
     @Override
-    public void start() throws LifecycleException {
+    public synchronized void start() throws LifecycleException {
         if (running) {
             throw new LifecycleException ();
         }
         running = true;
         lifeCycleSupport.fireLifecycleEvent (EventType.START_EVENT, null);
 
+        //自己添加WEB-INF/classes和WEB-INF/lib
+        if (resourceContext == null) {
+            throw new IllegalStateException ();
+        }
+
+        addRepositoryInternal (WEB_INF_CLASSES_LOCATION);
+        System.out.println ("添加Class Repository：" + WEB_INF_CLASSES_LOCATION);
+
+        Collection<Object> list = resourceContext.list (jarPath);
+        if (list == null) {
+            //合法的
+            System.out.println (jarPath + " 不存在");
+            return;
+        }
+
+        for (Object o : list) {
+            if (o instanceof FileDirContext.FileResource) {
+                try {
+                    FileDirContext.FileResource resource = (FileDirContext.FileResource) o;
+                    File file = resource.getFile ();
+                    String fileName = file.getName ();
+
+                    addJar (fileName, new JarFile (file), file);
+                    System.out.println ("添加Jar Repository：" + fileName);
+                } catch (IOException e) {
+                    e.printStackTrace ();
+                }
+            }
+        }
+
+
     }
 
     @Override
-    public void stop() throws LifecycleException {
+    public synchronized void stop() throws LifecycleException {
         if (!running) {
             throw new LifecycleException ();
         }
@@ -177,8 +217,8 @@ public class WebappClassLoader
     @Override
     public void addRepository(String repository) {
         //这两个是内部资源
-        if (repository.startsWith ("/WEB-INF/lib")
-                || repository.startsWith ("/WEB-INF/classes"))
+        if (repository.startsWith (WEB_INF_LIB_LOCATION)
+                || repository.startsWith (WEB_INF_CLASSES_LOCATION))
             return;
 
         try {
@@ -211,12 +251,13 @@ public class WebappClassLoader
      * 这个方法给Loader使用
      * <p>
      * public for test use
+     * 外部调用须线程安全
      *
      * @param name    jar name，比如xxx.jar
      * @param file    jar路径，从工作路径开始，如webapp/WEB-INF/lib/xx.jar
      * @param jarFile 通过file创建的 new JarFile (file)
      */
-    public synchronized void addJar(String name, JarFile jarFile, File file) throws IOException {
+    void addJar(String name, JarFile jarFile, File file) throws IOException {
         if (name == null ||
                 jarFile == null ||
                 file == null) {
@@ -253,19 +294,26 @@ public class WebappClassLoader
      * 这个方法给Loader使用
      * <p>
      * public for test use
+     * 文件，需要能定位到，如new File ("webapps/testClassLoader/WEB-INF/classes"))
+     * 外部调用须线程安全
      *
-     * @param file       文件，需要能定位到，如new File ("webapps/testClassLoader/WEB-INF/classes"))
      * @param repository 以docbase为基础的绝对路径，示例："/WEB-INF/classes"
      */
-    public synchronized void addRepository(String repository, File file) {
-        if (repository == null || file == null || !validatePath (file)) {
+    void addRepositoryInternal(String repository) {
+        if (StringUtils.isEmpty (repository) || resourceContext == null) {
             throw new IllegalArgumentException ();
         }
 
+        Object lookup = resourceContext.lookup (repository);
+        if (!(lookup instanceof FileDirContext)) {
+            throw new IllegalArgumentException ("必须是文件夹");
+        }
+
+        File docBase = new File (((FileDirContext) lookup).getDocBase ());
+        File file = new File (docBase, repository);
         //保证结尾有/
         if (!repository.endsWith (File.separator)) {
             repository = repository + File.separator;
-            file = new File (repository);
         }
 
         ClassRepository classRepository = new ClassRepository ();
@@ -303,20 +351,22 @@ public class WebappClassLoader
             }
 
             long lastModified = attributes.getLastModified ();
-            if (lastModified > jarRepository.lastModifyTime) {
+            if (lastModified != jarRepository.lastModifyTime) {
                 System.out.println ("jar " + jarRepository.jarName + " 被修改了");
                 return true;
             }
         }
 
         //判断jar的数目改没改
-        for (Object o : resourceContext.list ()) {
+        for (Object o : resourceContext.list (jarPath)) {
             if (o instanceof FileDirContext.FileResource) {
                 FileDirContext.FileResource fileResource = (FileDirContext.FileResource) o;
-                JarRepository jarRepository = jarRepositories.get (fileResource.getFile ().getName ());
+                String name = fileResource.getFile ().getName ();
+                JarRepository jarRepository = jarRepositories.get (name);
 
                 if (jarRepository == null) {
                     //说明新增了
+                    System.out.println ("新增jar " + name);
                     return true;
                 }
             }

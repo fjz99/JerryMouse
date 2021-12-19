@@ -33,8 +33,7 @@ import static com.example.connector.http.Constants.SERVER_INFO;
  *
  * @date 2021/12/8 19:55
  */
-public final class HttpProcessor implements Lifecycle {
-    private final LifeCycleSupport lifeCycleSupport = new LifeCycleSupport (this);
+public final class HttpProcessor extends LifeCycleBase {
 
     private final StringParser parser = new StringParser ();
     private HttpConnector connector;
@@ -401,39 +400,5 @@ public final class HttpProcessor implements Lifecycle {
     private void recycle() {
         request.recycle ();
         response.recycle ();
-    }
-
-    @Override
-    public void addLifecycleListener(LifecycleListener listener) {
-        lifeCycleSupport.addLifecycleListener (listener);
-    }
-
-    @Override
-    public List<LifecycleListener> findLifecycleListeners() {
-        return lifeCycleSupport.getListeners ();
-    }
-
-    @Override
-    public void removeLifecycleListener(LifecycleListener listener) {
-        lifeCycleSupport.removeLifecycleListener (listener);
-    }
-
-    @Override
-    public void start() throws LifecycleException {
-        if (started) {
-            throw new LifecycleException ("已经启动了");
-        }
-        started = true;
-        lifeCycleSupport.fireLifecycleEvent (EventType.START_EVENT, null);
-    }
-
-    @Override
-    public void stop() throws LifecycleException {
-        if (!started) {
-            throw new LifecycleException ("还没启动");
-        }
-        connector.removeProcessor (this);
-        started = false;
-        lifeCycleSupport.fireLifecycleEvent (EventType.STOP_EVENT, null);
     }
 }

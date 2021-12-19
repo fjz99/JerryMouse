@@ -3,7 +3,9 @@ package com.example;
 
 import com.example.connector.Request;
 import com.example.connector.Response;
+import com.example.loader.Loader;
 import com.example.logger.Logger;
+import com.example.resource.AbstractContext;
 import sun.security.krb5.Realm;
 
 import javax.naming.directory.DirContext;
@@ -267,7 +269,7 @@ public interface Container {
      * is no associated Resources object, return the Resources associated with
      * our parent Container (if any); otherwise return <code>null</code>.
      */
-    DirContext getResources();
+    AbstractContext getResources();
 
 
     /**

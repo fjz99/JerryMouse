@@ -6,7 +6,6 @@ import com.example.connector.Request;
 import com.example.connector.Response;
 import com.example.life.*;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -17,14 +16,11 @@ import io.netty.util.AsciiString;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @date 2021/12/8 19:55
  */
-public class HttpConnector implements Connector, Lifecycle {
-    private final LifeCycleSupport lifeCycleSupport = new LifeCycleSupport (this);
+public class HttpConnector extends LifeCycleBase implements Connector {
     private final int port = 8080;
     private final String info = "com.example.connector.http.HttpConnector：一个 http connector";
     private final List<HttpProcessor> runningProcessors = new ArrayList<> ();
@@ -33,7 +29,6 @@ public class HttpConnector implements Connector, Lifecycle {
     private boolean secure = false;
     private ChannelFuture future;
     private NioEventLoopGroup group;
-    private boolean started;//fixme start是同步调用还是异步？
 
     public Container getContainer() {
         return container;
@@ -44,30 +39,11 @@ public class HttpConnector implements Connector, Lifecycle {
         this.container = container;
     }
 
-    @Override
-    public void addLifecycleListener(LifecycleListener listener) {
-        lifeCycleSupport.addLifecycleListener (listener);
-    }
-
-    @Override
-    public List<LifecycleListener> findLifecycleListeners() {
-        return lifeCycleSupport.getListeners ();
-    }
-
-    @Override
-    public void removeLifecycleListener(LifecycleListener listener) {
-        lifeCycleSupport.removeLifecycleListener (listener);
-    }
-
     /**
      * 目前端口等是写死的
      */
-    public void start() throws LifecycleException {
-        if (started) {
-            throw new LifecycleException ("already started");
-        }
-        started = true;
-        lifeCycleSupport.fireLifecycleEvent (EventType.START_EVENT, null);
+    public synchronized void start() throws LifecycleException {
+        super.start ();
 
         ServerBootstrap b = new ServerBootstrap ();
         group = new NioEventLoopGroup ();
@@ -99,12 +75,8 @@ public class HttpConnector implements Connector, Lifecycle {
     }
 
     @Override
-    public void stop() throws LifecycleException {
-        if (!started) {
-            throw new LifecycleException ("先start再stop");
-        }
-        started = false;
-        lifeCycleSupport.fireLifecycleEvent (EventType.STOP_EVENT, null);
+    public synchronized void stop() throws LifecycleException {
+        super.stop ();
 
         //关闭线程池
         group.shutdownGracefully ();

@@ -3,8 +3,6 @@ package com.example.resource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AbstractFileFilter;
 
-import javax.naming.NamingException;
-import javax.naming.directory.Attributes;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -102,8 +100,9 @@ public final class FileDirContext extends AbstractContext {
     }
 
     @Override
-    public Collection<Object> list() {
-        Collection<File> files = FileUtils.listFilesAndDirs (base, new AbstractFileFilter () {
+    public Collection<Object> list(String path) {
+        File file = new File (base, path);
+        Collection<File> files = FileUtils.listFilesAndDirs (file, new AbstractFileFilter () {
             @Override
             public boolean accept(File file) {
                 return true;
@@ -115,14 +114,14 @@ public final class FileDirContext extends AbstractContext {
             }
         });
         List<Object> list = new ArrayList<> ();
-        for (File file : files) {
-            if (file.canRead () && file.exists ()) {
-                if (file.isDirectory ()) {
+        for (File aFile : files) {
+            if (aFile.canRead () && aFile.exists ()) {
+                if (aFile.isDirectory ()) {
                     FileDirContext fileDirContext = new FileDirContext ();
-                    fileDirContext.setDocBase (file.getAbsolutePath ());
+                    fileDirContext.setDocBase (aFile.getAbsolutePath ());
                     list.add (fileDirContext);
                 } else {
-                    list.add (new FileResource (file));
+                    list.add (new FileResource (aFile));
                 }
             }
         }
