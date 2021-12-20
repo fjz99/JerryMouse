@@ -2,7 +2,7 @@ package com.example.connector.http;
 
 import com.example.connector.ByteBufInputStream;
 import com.example.connector.ByteBufOutputStream;
-import com.example.life.LifeCycleBase;
+import com.example.life.LifecycleBase;
 import com.example.util.RequestUtil;
 import com.example.util.StringParser;
 import io.netty.buffer.ByteBuf;
@@ -30,7 +30,7 @@ import static com.example.connector.http.Constants.*;
  * @date 2021/12/8 19:55
  */
 @Slf4j
-public final class HttpProcessor extends LifeCycleBase {
+public final class HttpProcessor extends LifecycleBase {
 
     private final StringParser parser = new StringParser ();
     private HttpConnector connector;

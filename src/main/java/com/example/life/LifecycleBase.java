@@ -11,7 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @date 2021/12/19 10:20
  */
-public abstract class LifeCycleBase implements Lifecycle {
+public abstract class LifecycleBase implements Lifecycle {
     protected final List<LifecycleListener> listeners = new CopyOnWriteArrayList<> ();
     protected volatile boolean running = false;
 

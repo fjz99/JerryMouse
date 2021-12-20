@@ -1,15 +1,14 @@
 package com.example.session;
 
+import java.util.EventListener;
 
 
 /**
  * Interface defining a listener for significant Session generated events.
  *
  * @author Craig R. McClanahan
- * @version $Revision: 1.1 $ $Date: 2001/07/29 03:43:54 $
  */
-
-public interface SessionListener {
+public interface SessionListener extends EventListener {
 
 
     /**

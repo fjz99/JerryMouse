@@ -1,7 +1,7 @@
 package com.example.loader;
 
 import com.example.Context;
-import com.example.life.LifeCycleBase;
+import com.example.life.LifecycleBase;
 import com.example.life.Lifecycle;
 import com.example.life.LifecycleException;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import static com.example.loader.Constants.WEB_INF_LIB_LOCATION;
  * @date 2021/12/19 10:13
  */
 @Slf4j
-public class WebappLoader extends LifeCycleBase
+public class WebappLoader extends LifecycleBase
         implements Loader, PropertyChangeListener {
 
     private final ClassLoader parent;

@@ -14,7 +14,6 @@ import io.netty.handler.codec.http.*;
 import io.netty.util.AsciiString;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +21,7 @@ import java.util.List;
  * @date 2021/12/8 19:55
  */
 @Slf4j
-public class HttpConnector extends LifeCycleBase implements Connector {
+public class HttpConnector extends LifecycleBase implements Connector {
     private final int port = 8080;
     private final String info = "com.example.connector.http.HttpConnector：一个 http connector";
     private final List<HttpProcessor> runningProcessors = new ArrayList<> ();
