@@ -10,7 +10,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Slf4j
-public abstract class AbstractSessionIdGenerator extends LifecycleBase
+public abstract class AbstractSessionIdGenerator
+        extends LifecycleBase
         implements SessionIdGenerator {
 
     /**

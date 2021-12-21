@@ -1,6 +1,8 @@
 package com.example;
 
 
+import javax.servlet.ServletContext;
+
 /**
  * A <b>Context</b> is a Container that represents a servlet context, and
  * therefore an individual web application, in the Catalina servlet engine.
@@ -27,30 +29,43 @@ public interface Context extends Container {
      * The LifecycleEvent type sent when a context is reloaded.
      */
     String RELOAD_EVENT = "reload";
-//
-//
-//    // ------------------------------------------------------------- Properties
-//
-//
-//    /**
-//     * Return the set of initialized application listener objects,
-//     * in the order they were specified in the web application deployment
-//     * descriptor, for this application.
-//     *
-//     * @throws IllegalStateException if this method is called before
-//     *                               this application has started, or after it has been stopped
-//     */
-//    Object[] getApplicationListeners();
-//
-//
-//    /**
-//     * Store the set of initialized application listener objects,
-//     * in the order they were specified in the web application deployment
-//     * descriptor, for this application.
-//     *
-//     * @param listeners The set of instantiated listener objects.
-//     */
-//    void setApplicationListeners(Object[] listeners);
+
+    /**
+     * Obtain the registered application lifecycle listeners.
+     *
+     * @return An array containing the application lifecycle listener instances
+     * for this web application in the order they were specified in the
+     * web application deployment descriptor
+     */
+    Object[] getApplicationLifecycleListeners();
+
+    /**
+     * Store the set of initialized application lifecycle listener objects,
+     * in the order they were specified in the web application deployment
+     * descriptor, for this application.
+     *
+     * @param listeners The set of instantiated listener objects.
+     */
+    void setApplicationLifecycleListeners(Object[] listeners);
+
+    /**
+     * Obtain the registered application event listeners.
+     *
+     * @return An array containing the application event listener instances for
+     * this web application in the order they were specified in the web
+     * application deployment descriptor
+     */
+    Object[] getApplicationEventListeners();
+
+    /**
+     * Store the set of initialized application event listener objects,
+     * in the order they were specified in the web application deployment
+     * descriptor, for this application.
+     *
+     * @param listeners The set of instantiated listener objects.
+     */
+    void setApplicationEventListeners(Object[] listeners);
+
 //
 //
 //    /**
@@ -151,24 +166,23 @@ public interface Context extends Container {
 //     * @param distributable The new distributable flag
 //     */
 //    void setDistributable(boolean distributable);
-//
-//
-//    /**
-//     * Return the document root for this Context.  This can be an absolute
-//     * pathname, a relative pathname, or a URL.
-//     */
-//    String getDocBase();
-//
-//
-//    /**
-//     * Set the document root for this Context.  This can be an absolute
-//     * pathname, a relative pathname, or a URL.
-//     *
-//     * @param docBase The new document root
-//     */
-//    void setDocBase(String docBase);
-//
-//
+
+    /**
+     * Return the document root for this Context.  This can be an absolute
+     * pathname, a relative pathname, or a URL.
+     */
+    String getDocBase();
+
+
+    /**
+     * Set the document root for this Context.  This can be an absolute
+     * pathname, a relative pathname, or a URL.
+     *
+     * @param docBase The new document root
+     */
+    void setDocBase(String docBase);
+
+
 //    /**
 //     * Return the login configuration descriptor for this web application.
 //     */
@@ -227,6 +241,7 @@ public interface Context extends Container {
 //    void setPublicId(String publicId);
 //
 //
+
     /**
      * Return the reloadable flag for this web application.
      */
@@ -239,8 +254,8 @@ public interface Context extends Container {
      * @param reloadable The new reloadable flag
      */
     void setReloadable(boolean reloadable);
-//
-//
+
+
 //    /**
 //     * Return the override flag for this web application.
 //     */
@@ -269,26 +284,27 @@ public interface Context extends Container {
 //    void setPrivileged(boolean privileged);
 //
 //
-//    /**
-//     * Return the servlet context for which this Context is a facade.
-//     */
-//    ServletContext getServletContext();
-//
-//
-//    /**
-//     * Return the default session timeout (in minutes) for this
-//     * web application.
-//     */
-//    int getSessionTimeout();
-//
-//
-//    /**
-//     * Set the default session timeout (in minutes) for this
-//     * web application.
-//     *
-//     * @param timeout The new default session timeout
-//     */
-//    void setSessionTimeout(int timeout);
+
+    /**
+     * Return the servlet context for which this Context is a facade.
+     */
+    ServletContext getServletContext();
+
+
+    /**
+     * Return the default session timeout (in minutes) for this
+     * web application.
+     */
+    int getSessionTimeout();
+
+
+    /**
+     * Set the default session timeout (in minutes) for this
+     * web application.
+     *
+     * @param timeout The new default session timeout
+     */
+    void setSessionTimeout(int timeout);
 //
 //
 //    /**
@@ -308,17 +324,17 @@ public interface Context extends Container {
 //
 //
 //    // --------------------------------------------------------- Public Methods
-//
-//
-//    /**
-//     * Add a new Listener class name to the set of Listeners
-//     * configured for this application.
-//     *
-//     * @param listener Java class name of a listener class
-//     */
-//    void addApplicationListener(String listener);
-//
-//
+
+
+    /**
+     * Add a new Listener class name to the set of Listeners
+     * configured for this application.
+     *
+     * @param listener Java class name of a listener class
+     */
+    void addApplicationListener(String listener);
+
+
 //    /**
 //     * Add a new application parameter for this application.
 //     *
@@ -332,13 +348,6 @@ public interface Context extends Container {
 //     */
 //    void addConstraint(SecurityConstraint constraint);
 //
-//
-//    /**
-//     * Add an EJB resource reference for this web application.
-//     *
-//     * @param ejb New EJB resource reference
-//     */
-//    void addEjb(ContextEjb ejb);
 //
 //
 //    /**
@@ -381,13 +390,6 @@ public interface Context extends Container {
 //     */
 //    void addInstanceListener(String listener);
 //
-//
-//    /**
-//     * Add a local EJB resource reference for this web application.
-//     *
-//     * @param ejb New local EJB resource reference
-//     */
-//    void addLocalEjb(ContextLocalEjb ejb);
 //
 //
 //    /**
@@ -506,13 +508,14 @@ public interface Context extends Container {
 //    org.apache.catalina.Wrapper createWrapper();
 //
 //
-//    /**
-//     * Return the set of application listener class names configured
-//     * for this application.
-//     */
-//    String[] findApplicationListeners();
-//
-//
+
+    /**
+     * Return the set of application listener class names configured
+     * for this application.
+     */
+    String[] findApplicationListeners();
+
+
 //    /**
 //     * Return the set of application parameters for this application.
 //     */
@@ -525,21 +528,6 @@ public interface Context extends Container {
 //     */
 //    SecurityConstraint[] findConstraints();
 //
-//
-//    /**
-//     * Return the EJB resource reference with the specified name, if any;
-//     * otherwise, return <code>null</code>.
-//     *
-//     * @param name Name of the desired EJB resource reference
-//     */
-//    ContextEjb findEjb(String name);
-//
-//
-//    /**
-//     * Return the defined EJB resource references for this application.
-//     * If there are none, a zero-length array is returned.
-//     */
-//    ContextEjb[] findEjbs();
 //
 //
 //    /**
@@ -611,21 +599,6 @@ public interface Context extends Container {
 //     */
 //    String[] findInstanceListeners();
 //
-//
-//    /**
-//     * Return the local EJB resource reference with the specified name, if any;
-//     * otherwise, return <code>null</code>.
-//     *
-//     * @param name Name of the desired EJB resource reference
-//     */
-//    ContextLocalEjb findLocalEjb(String name);
-//
-//
-//    /**
-//     * Return the defined local EJB resource references for this application.
-//     * If there are none, a zero-length array is returned.
-//     */
-//    ContextLocalEjb[] findLocalEjbs();
 //
 //
 //    /**
@@ -816,6 +789,7 @@ public interface Context extends Container {
 //    String[] findWrapperListeners();
 //
 //
+
     /**
      * Reload this web application, if reloading is supported.
      *
@@ -823,15 +797,15 @@ public interface Context extends Container {
      *                               property is set to <code>false</code>.
      */
     void reload();
-//
-//
-//    /**
-//     * Remove the specified application listener class from the set of
-//     * listeners for this application.
-//     *
-//     * @param listener Java class name of the listener to be removed
-//     */
-//    void removeApplicationListener(String listener);
+
+
+    /**
+     * Remove the specified application listener class from the set of
+     * listeners for this application.
+     *
+     * @param listener Java class name of the listener to be removed
+     */
+    void removeApplicationListener(String listener);
 //
 //
 //    /**
@@ -849,15 +823,6 @@ public interface Context extends Container {
 //     * @param constraint Constraint to be removed
 //     */
 //    void removeConstraint(SecurityConstraint constraint);
-//
-//
-//    /**
-//     * Remove any EJB resource reference with the specified name.
-//     *
-//     * @param name Name of the EJB resource reference to remove
-//     */
-//    void removeEjb(String name);
-//
 //
 //    /**
 //     * Remove any environment entry with the specified name.
@@ -901,13 +866,6 @@ public interface Context extends Container {
 //     */
 //    void removeInstanceListener(String listener);
 //
-//
-//    /**
-//     * Remove any local EJB resource reference with the specified name.
-//     *
-//     * @param name Name of the EJB resource reference to remove
-//     */
-//    void removeLocalEjb(String name);
 //
 //
 //    /**
@@ -1010,6 +968,4 @@ public interface Context extends Container {
 //     * @param listener Class name of a ContainerListener class to be removed
 //     */
 //    void removeWrapperListener(String listener);
-//
-//
 }

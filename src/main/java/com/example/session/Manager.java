@@ -2,6 +2,7 @@ package com.example.session;
 
 
 import com.example.Container;
+import com.example.Context;
 
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
@@ -36,15 +37,15 @@ public interface Manager {
     /**
      * Return the Container with which this Manager is associated.
      */
-    Container getContainer();
+    Context getContext();
 
 
     /**
      * Set the Container with which this Manager is associated.
      *
-     * @param container The newly associated Container
+     * @param context The newly associated Container
      */
-    void setContainer(Container container);
+    void setContext(Context context);
 
 
     /**
