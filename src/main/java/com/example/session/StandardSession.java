@@ -190,7 +190,8 @@ public class StandardSession implements Session, HttpSession, Serializable {
      * 事实上，manager创建session之后id=null,
      * 所以manager也是通过setId来设置id的,
      * 所以setId对应的就是createSession<p>
-     * <b>为什么不在构造器中？因为要recycle！<b/>
+     * <b>为什么不在构造器中？因为要recycle！<b/><p>
+     * 创建时的setId会通知监听器，但是改动id的setId不会通知监听器
      */
     @Override
     public void setId(String id, boolean notify) {

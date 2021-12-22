@@ -1,16 +1,13 @@
 package com.example.session;
 
-
-import com.example.Container;
 import com.example.Context;
 
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 
-
 /**
  * A <b>Manager</b> manages the pool of Sessions that are associated with a
- * particular Container.  Different Manager implementations may support
+ * particular Context. Different Manager implementations may support
  * value-added features such as the persistent storage of session data,
  * as well as migrating sessions for distributable web applications.
  * <p>
@@ -25,87 +22,63 @@ import java.io.IOException;
  * </ul>
  *
  * @author Craig R. McClanahan
- * @version $Revision: 1.6 $ $Date: 2002/09/19 22:55:47 $
  */
-
 public interface Manager {
-
 
     // ------------------------------------------------------------- Properties
 
-
     /**
-     * Return the Container with which this Manager is associated.
+     * Get the Context with which this Manager is associated.
+     *
+     * @return The associated Context
      */
     Context getContext();
 
 
     /**
-     * Set the Container with which this Manager is associated.
+     * Set the Context with which this Manager is associated. The Context must
+     * be set to a non-null value before the Manager is first used. Multiple
+     * calls to this method before first use are permitted. Once the Manager has
+     * been used, this method may not be used to change the Context (including
+     * setting a {@code null} value) that the Manager is associated with.
      *
-     * @param context The newly associated Container
+     * @param context The newly associated Context
      */
     void setContext(Context context);
 
 
     /**
-     * Return the DefaultContext with which this Manager is associated.
+     * @return the session id generator
      */
-//    public DefaultContext getDefaultContext();
+    SessionIdGenerator getSessionIdGenerator();
 
 
     /**
-     * Set the DefaultContext with which this Manager is associated.
+     * Sets the session id generator
      *
-     * @param defaultContext The newly associated DefaultContext
+     * @param sessionIdGenerator The session id generator
      */
-//    public void setDefaultContext(DefaultContext defaultContext);
-
+    void setSessionIdGenerator(SessionIdGenerator sessionIdGenerator);
 
 
     /**
-     * Return the distributable flag for the sessions supported by
-     * this Manager.
-     */
-    boolean getDistributable();
-
-
-    /**
-     * Set the distributable flag for the sessions supported by this
-     * Manager.  If this flag is set, all user data objects added to
-     * sessions associated with this manager must implement Serializable.
+     * Gets the maximum number of sessions that have been active at the same
+     * time.
      *
-     * @param distributable The new distributable flag
+     * @return Maximum number of sessions that have been active at the same
+     * time
      */
-    void setDistributable(boolean distributable);
+    int getMaxActive();
 
 
     /**
-     * Return descriptive information about this Manager implementation and
-     * the corresponding version number, in the format
-     * <code>&lt;description&gt;/&lt;version&gt;</code>.
-     */
-    String getInfo();
-
-
-    /**
-     * Return the default maximum inactive interval (in seconds)
-     * for Sessions created by this Manager.
-     */
-    int getMaxInactiveInterval();
-
-
-    /**
-     * Set the default maximum inactive interval (in seconds)
-     * for Sessions created by this Manager.
+     * (Re)sets the maximum number of sessions that have been active at the
+     * same time.
      *
-     * @param interval The new default value
+     * @param maxActive Maximum number of sessions that have been active at
+     * the same time.
      */
-    void setMaxInactiveInterval(int interval);
-
-
-    // --------------------------------------------------------- Public Methods
-
+    void setMaxActive(int maxActive);
 
     /**
      * Add this Session to the set of active Sessions for this Manager.
@@ -124,16 +97,51 @@ public interface Manager {
 
 
     /**
+     * Change the session ID of the current session to a new randomly generated
+     * session ID.
+     *
+     * @param session   The session to change the session ID for
+     */
+    void changeSessionId(Session session);
+
+
+    /**
+     * Change the session ID of the current session to a specified session ID.
+     *
+     * @param session   The session to change the session ID for
+     * @param newId   new session ID
+     */
+    void changeSessionId(Session session, String newId);
+
+
+    /**
+     * Get a session from the recycled ones or create a new empty one.
+     * The PersistentManager manager does not need to create session data
+     * because it reads it from the Store.
+     *
+     * @return An empty Session object
+     */
+    Session createEmptySession();
+
+
+    /**
      * Construct and return a new session object, based on the default
      * settings specified by this Manager's properties.  The session
-     * id will be assigned by this method, and available via the getId()
-     * method of the returned session.  If a new session cannot be created
-     * for any reason, return <code>null</code>.
+     * id specified will be used as the session id.
+     * If a new session cannot be created for any reason, return
+     * <code>null</code>.
      *
+     * @param sessionId The session id which should be used to create the
+     *  new session; if <code>null</code>, the session
+     *  id will be assigned by this method, and available via the getId()
+     *  method of the returned session.
      * @exception IllegalStateException if a new session cannot be
      *  instantiated for any reason
+     *
+     * @return An empty Session object with the given ID or a newly created
+     *         session ID if none was specified
      */
-    Session createSession();
+    Session createSession(String sessionId);
 
 
     /**
@@ -146,6 +154,9 @@ public interface Manager {
      *  instantiated for any reason
      * @exception IOException if an input/output error occurs while
      *  processing this request
+     *
+     * @return the request session or {@code null} if a session with the
+     *         requested ID could not be found
      */
     Session findSession(String id) throws IOException;
 
@@ -153,6 +164,8 @@ public interface Manager {
     /**
      * Return the set of active Sessions associated with this Manager.
      * If this Manager has no active Sessions, a zero-length array is returned.
+     *
+     * @return All the currently active sessions managed by this manager
      */
     Session[] findSessions();
 
@@ -177,6 +190,15 @@ public interface Manager {
     void remove(Session session);
 
 
+//    /**
+//     * Remove this Session from the active Sessions for this Manager.
+//     *
+//     * @param session   Session to be removed
+//     * @param update    Should the expiration statistics be updated
+//     */
+//    void remove(Session session, boolean update);
+
+
     /**
      * Remove a property change listener from this component.
      *
@@ -184,6 +206,12 @@ public interface Manager {
      */
     void removePropertyChangeListener(PropertyChangeListener listener);
 
+    /**
+     * Gets the number of currently active sessions.
+     *
+     * @return Number of currently active sessions
+     */
+    int getSessionCount();
 
     /**
      * Save any currently active sessions in the appropriate persistence
@@ -195,4 +223,10 @@ public interface Manager {
     void unload() throws IOException;
 
 
+    /**
+     * This method will be invoked by the context/container on a periodic
+     * basis and allows the manager to implement
+     * a method that executes periodic tasks, such as expiring sessions etc.
+     */
+    void backgroundProcess();
 }
