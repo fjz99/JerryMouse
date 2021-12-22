@@ -186,7 +186,11 @@ public class StandardSession implements Session, HttpSession, Serializable {
     }
 
     /**
-     * 删除旧的，然后添加新的
+     * 删除旧的，然后添加新的<p>
+     * 事实上，manager创建session之后id=null,
+     * 所以manager也是通过setId来设置id的,
+     * 所以setId对应的就是createSession<p>
+     * <b>为什么不在构造器中？因为要recycle！<b/>
      */
     @Override
     public void setId(String id, boolean notify) {
@@ -196,6 +200,7 @@ public class StandardSession implements Session, HttpSession, Serializable {
 
         manager.remove (this);
 
+        this.id = id;
         manager.add (this);
 
         if (notify) {
@@ -538,8 +543,7 @@ public class StandardSession implements Session, HttpSession, Serializable {
                 removeAttributeInternal (key, notify);
             }
 
-//            recycle ();
-//            无效化session不会清除attributes
+            recycle ();//??
         }
     }
 

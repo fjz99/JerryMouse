@@ -1,12 +1,16 @@
 package com.example.session;
 
 import com.example.life.LifecycleBase;
+import com.example.util.EnhancedObjectInputStream;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 
 /**
  * @date 2021/12/20 21:09
@@ -18,7 +22,7 @@ public abstract class AbstractStore
         implements Store {
 
     /**
-     * used for logging.
+     * used for logging
      */
     protected static final String storeName = "AbstractStore";
 
@@ -42,13 +46,8 @@ public abstract class AbstractStore
     }
 
     @Override
-    public int getSize() throws IOException {
-        return 0;
-    }
-
-    @Override
     public void addPropertyChangeListener(PropertyChangeListener listener) {
-
+        support.addPropertyChangeListener (listener);
     }
 
     /**
@@ -70,7 +69,6 @@ public abstract class AbstractStore
      * 处理store的session过期检查<p>
      * 这个方法只会和访问manager的线程冲突，而用户不会swapOut，<p>
      * 所以在这个方法调用的时候，只要在内存中的map查询是否存在session即可
-     * todo
      */
     public void processExpires() {
         String[] strings;
@@ -92,7 +90,43 @@ public abstract class AbstractStore
                 log.error ("processExpires中，load {} 失败，err {}", strings, e.toString ());
                 return;
             }
+
+            //不要直接用isValid判断是否超时，因为可能内存还有，这样就会重复触发监听器
+            //这个方法会被统一调用，具体顺序是先检查内存expire，在检查外存expire
+            long now = System.currentTimeMillis ();
+            boolean isLoaded = false;
+            if (now - session.getThisAccessedTime () >= session.getMaxInactiveInterval ()) {
+                if (manager instanceof AbstractPersistentManager) {
+                    isLoaded = ((AbstractPersistentManager) manager).isLoaded (session.getId ());
+                } else {
+                    try {
+                        if (manager.findSession (session.getId ()) != null) {
+                            isLoaded = true;
+                        }
+                    } catch (IOException ignored) {
+
+                    }
+                }
+            }
+
+            //如果加载到内存了的话，就会在内存检查expire的时候触发监听器了
+            if (!isLoaded) {
+                session.expire ();
+            } else {
+                //不触发监听器，但是recycle可能实现了对象池，所以复用
+                session.recycle ();
+            }
         }
+    }
+
+    /**
+     * session是context的，也需要使用特定于context的类加载器来加载
+     */
+    protected ObjectInputStream getObjectInputStream(InputStream is) throws IOException {
+//        ClassLoader classLoader = getManager ().getContext ().getLoader ().getClassLoader ();
+        //上面的方法太麻烦了，所以使用线程上下文类加载器
+        ClassLoader classLoader = Thread.currentThread ().getContextClassLoader ();
+        return new EnhancedObjectInputStream (classLoader, new BufferedInputStream (is));
     }
 
 
