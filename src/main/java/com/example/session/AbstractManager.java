@@ -175,9 +175,13 @@ public abstract class AbstractManager
         session.setCreationTime (System.currentTimeMillis ());
         session.setValid (true);
         session.setNew (true);
+        log.trace ("create session {}", session.getId ());
         return session;
     }
 
+    /**
+     * 只有add会put
+     */
     @Override
     public void add(Session session) {
         Objects.requireNonNull (session.getId ());
@@ -289,6 +293,24 @@ public abstract class AbstractManager
         String id = session.getIdInternal ();
         session.setId (newId, false);
         session.tellChangedSessionId (newId, id, true, true);
+    }
+
+    /**
+     * 抽象父方法，仅仅让session失效和回收，然后清空sessions map
+     */
+    @Override
+    public void unload() throws IOException {
+        //expire
+        for (Map.Entry<String, Session> e : sessions.entrySet ()) {
+            Session session = e.getValue ();
+            try {
+                session.expire ();//expire会移除map，然后recycle等
+            } finally {
+                session.recycle ();//保证一定执行recycle，也可以防止内存泄漏
+            }
+        }
+
+        sessions.clear ();
     }
 }
 

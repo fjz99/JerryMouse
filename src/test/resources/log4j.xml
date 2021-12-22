@@ -7,16 +7,8 @@
     <appender name="console" class="org.apache.log4j.ConsoleAppender">
         <!-- 日志输出格式 -->
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%p][%d{yyyy-MM-dd HH:mm:ss SSS}][%c]-[%m]%n"/>
+            <param name="ConversionPattern" value="%p [%t][%d{HH:mm:ss SSS}] [%l] %m%n"/>
         </layout>
-
-        <!--过滤器设置输出的级别-->
-        <filter class="org.apache.log4j.varia.LevelRangeFilter">
-            <!-- 设置日志输出的最小级别 -->
-            <param name="levelMin" value="DEBUG"/>
-            <!-- 设置日志输出的最大级别 -->
-            <param name="levelMax" value="ERROR"/>
-        </filter>
     </appender>
 
 
@@ -86,23 +78,23 @@
         3. 代码中使用Logger.getLogger("logTest")获得此输出器，且不会使用根输出器
     -->
     <!--连接器logger-->
-    <logger name="com.example.connector" additivity="false">
-        <level value="INFO"/>
-        <appender-ref ref="accessLog"/>
-    </logger>
+<!--    <logger name="com.example.connector" additivity="false">-->
+<!--        <level value="INFO"/>-->
+<!--        <appender-ref ref="accessLog"/>-->
+<!--    </logger>-->
 
     <!--类加载器logger,只报告类加载失败等-->
-    <logger name="com.example.loader" additivity="false">
-        <level value="WARN"/>
-        <appender-ref ref="loaderLog"/>
-    </logger>
+<!--    <logger name="com.example.loader" additivity="false">-->
+<!--        <level value="WARN"/>-->
+<!--        <appender-ref ref="loaderLog"/>-->
+<!--    </logger>-->
 
 
-    <!-- 根logger的设置，若代码中未找到指定的logger，则会根据继承机制，使用根logger-->
+<!--测试直接打到console上，而且是all级别-->
     <root>
-        <level value="INFO"/>
+        <level value="ALL"/>
         <appender-ref ref="console"/>
-        <appender-ref ref="fileAppender"/>
+<!--        <appender-ref ref="fileAppender"/>-->
         <!--        <appender-ref ref="rollingAppender"/>-->
         <!--        <appender-ref ref="dailyRollingAppender"/>-->
     </root>

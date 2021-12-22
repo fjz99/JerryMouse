@@ -59,4 +59,16 @@ public abstract class LifecycleBase implements Lifecycle {
         fireLifecycleEvent (EventType.STOP_EVENT, null);
     }
 
+    protected void verifyRunning() {
+        if (!running) {
+            throw new IllegalStateException ();
+        }
+    }
+
+    protected void verifyStopped() {
+        if (running) {
+            throw new IllegalStateException ();
+        }
+    }
+
 }

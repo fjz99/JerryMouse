@@ -71,6 +71,9 @@ public abstract class AbstractStore
      * 所以在这个方法调用的时候，只要在内存中的map查询是否存在session即可
      */
     public void processExpires() {
+        if (((AbstractManager) getManager ()).getSessionMaxAliveTime () <= 0) {
+            return;
+        }
         String[] strings;
         try {
             strings = expiredKeys ();
@@ -90,14 +93,24 @@ public abstract class AbstractStore
                 log.error ("processExpires中，load {} 失败，err {}", strings, e.toString ());
                 return;
             }
+            if (session.getMaxInactiveInterval () <= 0) {
+                return;
+            }
 
             //不要直接用isValid判断是否超时，因为可能内存还有，这样就会重复触发监听器
             //这个方法会被统一调用，具体顺序是先检查内存expire，在检查外存expire
             long now = System.currentTimeMillis ();
             boolean isLoaded = false;
             if (now - session.getThisAccessedTime () >= session.getMaxInactiveInterval ()) {
-                if (manager instanceof AbstractPersistentManager) {
-                    isLoaded = ((AbstractPersistentManager) manager).isLoaded (session.getId ());
+                try {
+                    remove (string);
+                } catch (IOException e) {
+                    e.printStackTrace ();
+                    log.error ("remove key {} err {}", string, e.toString ());
+                }
+
+                if (manager instanceof PersistentManager) {
+                    isLoaded = ((PersistentManager) manager).isLoaded (session.getId ());
                 } else {
                     try {
                         if (manager.findSession (session.getId ()) != null) {

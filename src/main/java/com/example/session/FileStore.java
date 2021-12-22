@@ -2,7 +2,6 @@ package com.example.session;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.AbstractFileFilter;
 
 import javax.servlet.ServletContext;
 import java.io.*;
@@ -118,9 +117,9 @@ public final class FileStore extends AbstractStore {
         File file = file (id);
         if (file != null) {
             if (file.delete ()) {
-                log.debug ("{} 删除成功", file.getPath ());
+                log.trace ("{} 删除成功", file.getPath ());
             } else {
-                log.debug ("{} 删除失败", file.getPath ());
+                log.trace ("{} 删除失败", file.getPath ());
             }
         }
     }
@@ -131,7 +130,7 @@ public final class FileStore extends AbstractStore {
         if (file.exists () && file.isFile ()) {
             return file;
         } else {
-            log.warn ("{} session 不存在", file.getPath ());
+            log.trace ("{} session 不存在", file.getPath ());
             return null;
         }
     }

@@ -139,9 +139,10 @@ class StandardSessionTest {
     }
 
     @Test
-    void otherTest() throws IOException, ClassNotFoundException, InterruptedException {
+    void otherTest() throws InterruptedException {
         StandardSession session = new StandardSession (manager);
         session.setValid (true);
+
         int n = 10;
         Random random = new Random ();
         random.setSeed (System.currentTimeMillis ());
@@ -154,6 +155,7 @@ class StandardSessionTest {
         assertThrows (IllegalStateException.class, () -> session.getValue ("1"));
 
         session.setValid (true);
+        session.setManager (manager);
         session.setMaxInactiveInterval (1);
         session.access ();
         Thread.sleep (1010);

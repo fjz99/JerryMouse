@@ -47,16 +47,16 @@ public class StandardSession implements Session, HttpSession, Serializable {
     /**
      * 没必要序列化，须反序列化后重新set
      */
-    protected final transient PropertyChangeSupport support =
+    protected transient PropertyChangeSupport support =
             new PropertyChangeSupport (this);
     /**
      * 这个是内部使用的listener
      */
-    protected final transient List<SessionListener> listeners = new ArrayList<> ();
+    protected transient List<SessionListener> listeners = new ArrayList<> ();
     /**
      * session存储的内容
      */
-    protected transient ConcurrentMap<String, Object> attributes = new ConcurrentHashMap<> ();
+    protected transient Map<String, Object> attributes = new ConcurrentHashMap<> ();
     /**
      * The authentication type used to authenticate our cached Principal,
      * if any.  NOTE:  This value is not included in the serialized
@@ -131,10 +131,6 @@ public class StandardSession implements Session, HttpSession, Serializable {
     public StandardSession(Manager manager) {
         super ();
         this.manager = manager;
-
-        if (ACTIVITY_CHECK) {
-            accessCount = new AtomicInteger (0);
-        }
     }
 
     @Override
@@ -516,6 +512,7 @@ public class StandardSession implements Session, HttpSession, Serializable {
                 return;
             }
 
+            log.trace ("expire session {}", getIdInternal ());
             Object[] listeners = getManager ().getContext ().getApplicationLifecycleListeners ();
             if (validListeners (listeners)) {
                 for (Object listener : listeners) {
@@ -526,10 +523,6 @@ public class StandardSession implements Session, HttpSession, Serializable {
                         }, "expire:sessionDestroyed");
                     }
                 }
-            }
-
-            if (ACTIVITY_CHECK) {
-                accessCount.set (0);
             }
 
             if (notify) {
@@ -638,11 +631,6 @@ public class StandardSession implements Session, HttpSession, Serializable {
     @Override
     public void access() {
         thisAccessedTime = System.currentTimeMillis ();
-
-        if (ACTIVITY_CHECK) {
-            accessCount.incrementAndGet ();
-        }
-
     }
 
     @Override
@@ -660,10 +648,6 @@ public class StandardSession implements Session, HttpSession, Serializable {
         isNew = false;
 
         thisAccessedTime = System.currentTimeMillis ();
-
-        if (ACTIVITY_CHECK) {
-            accessCount.decrementAndGet ();
-        }
     }
 
     @Override
@@ -827,8 +811,6 @@ public class StandardSession implements Session, HttpSession, Serializable {
         thisAccessedTime = (long) stream.readObject ();
         id = (String) stream.readObject ();
 
-        log.debug ("反序列化session，read 标量成功");
-
         int n = stream.readInt ();
         if (attributes == null) {
             attributes = new ConcurrentHashMap<> (n);
@@ -845,7 +827,10 @@ public class StandardSession implements Session, HttpSession, Serializable {
             }
         }
 
-        log.debug ("反序列化session完成");
+        listeners = new ArrayList<> ();
+        support = new PropertyChangeSupport (this);
+        notes = new ConcurrentHashMap<> ();
+        log.trace ("反序列化session {} 完成", getIdInternal ());
     }
 
     /**
@@ -862,8 +847,6 @@ public class StandardSession implements Session, HttpSession, Serializable {
         stream.writeObject (thisAccessedTime);
         stream.writeObject (id);
 
-        log.debug ("序列化session，write 标量成功");
-
         stream.writeInt (attributes.size ());
         for (Map.Entry<String, Object> entry : attributes.entrySet ()) {
             stream.writeObject (entry.getKey ());
@@ -875,6 +858,6 @@ public class StandardSession implements Session, HttpSession, Serializable {
             }
         }
 
-        log.debug ("序列化session完成");
+        log.trace ("序列化session {} 完成", getIdInternal ());
     }
 }
