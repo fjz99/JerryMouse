@@ -162,6 +162,8 @@ class StandardSessionTest {
         assertTrue (session.isValidInternal ());
         assertFalse (session.isValid ());
         assertFalse (session.isValidInternal ());
+
+        System.out.println (session);
     }
 
     static class Container {

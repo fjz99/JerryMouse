@@ -157,8 +157,6 @@ public class PersistentManager
      * 这就导致把删除的会话换到外存了
      * <p>
      * 这个是安全的，因为remove只会在session.expire中被调用，而那个方法中，必须加synchronized(this)
-     *
-     *
      */
     protected void swapOut(Session session) throws IOException {
         //判断isValid，防止失效的session被换出

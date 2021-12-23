@@ -47,7 +47,6 @@ public abstract class LifecycleBase implements Lifecycle {
         }
         running = true;
         fireLifecycleEvent (EventType.START_EVENT, null);
-
     }
 
     @Override

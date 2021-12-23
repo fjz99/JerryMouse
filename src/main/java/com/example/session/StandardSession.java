@@ -9,6 +9,8 @@ import java.beans.PropertyChangeSupport;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.security.Principal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -859,5 +861,15 @@ public class StandardSession implements Session, HttpSession, Serializable {
         }
 
         log.trace ("序列化session {} 完成", getIdInternal ());
+    }
+
+    @Override
+    public String toString() {
+        return "StandardSession{" +
+                "creationTime=" + new Date (creationTime) +
+                ", id='" + id + '\'' +
+                ", isValid=" + isValid +
+                ", thisAccessedTime=" + new Date (thisAccessedTime) +
+                '}';
     }
 }

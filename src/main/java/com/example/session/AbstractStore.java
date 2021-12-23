@@ -51,9 +51,6 @@ public abstract class AbstractStore
     }
 
     /**
-     * Get only those keys of sessions, that are saved in the Store and are to
-     * be expired.
-     * <p>
      * 只获得过期的key,默认实现为获得所有的key<p>
      * 此方法用于processExpires<p>
      * <b>如果要适用LRU那么就在此方法改动，保证返回的是LRU顺序的数组</b>

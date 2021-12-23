@@ -1,12 +1,10 @@
 package com.example;
 
-
 import com.example.connector.Request;
 import com.example.connector.Response;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-
 
 /**
  * <p>A <b>Valve</b> is a request processing component associated with a
@@ -21,22 +19,30 @@ import java.io.IOException;
  * @author Craig R. McClanahan
  * @author Gunnar Rjnning
  * @author Peter Donald
- * @version $Revision: 1.4 $ $Date: 2001/07/22 20:13:30 $
  */
-
 public interface Valve {
 
 
-    //-------------------------------------------------------------- Properties
+    /**
+     * @return the next Valve in the pipeline containing this Valve, if any.
+     */
+    Valve getNext();
 
 
     /**
-     * Return descriptive information about this Valve implementation.
+     * Set the next Valve in the pipeline containing this Valve.
+     *
+     * @param valve The new next valve, or <code>null</code> if none
      */
-    String getInfo();
+    void setNext(Valve valve);
 
 
-    //---------------------------------------------------------- Public Methods
+    /**
+     * Execute a periodic task, such as reloading, etc. This method will be
+     * invoked inside the classloading context of this container. Unexpected
+     * throwables will be caught and logged.
+     */
+    void backgroundProcess();
 
 
     /**
@@ -54,7 +60,7 @@ public interface Valve {
      *     and pass them on.
      * <li>If the corresponding Response was not generated (and control was not
      *     returned, call the next Valve in the pipeline (if there is one) by
-     *     executing <code>context.invokeNext()</code>.
+     *     executing <code>getNext().invoke()</code>.
      * <li>Examine, but not modify, the properties of the resulting Response
      *     (which was created by a subsequently invoked Valve or Container).
      * </ul>
@@ -72,24 +78,20 @@ public interface Valve {
      *     unless it is completely generating the response, or wrapping the
      *     request before passing it on.
      * <li>Modify the HTTP headers included with the Response after the
-     *     <code>invokeNext()</code> method has returned.
+     *     <code>getNext().invoke()</code> method has returned.
      * <li>Perform any actions on the output stream associated with the
-     *     specified Response after the <code>invokeNext()</code> method has
+     *     specified Response after the <code>getNext().invoke()</code> method has
      *     returned.
      * </ul>
      *
-     * @param request  The servlet request to be processed
+     * @param request The servlet request to be processed
      * @param response The servlet response to be created
-     * @param context  The valve context used to invoke the next valve
-     *                 in the current processing pipeline
-     * @throws IOException      if an input/output error occurs, or is thrown
-     *                          by a subsequently invoked Valve, Filter, or Servlet
-     * @throws ServletException if a servlet error occurs, or is thrown
-     *                          by a subsequently invoked Valve, Filter, or Servlet
+     *
+     * @exception IOException if an input/output error occurs, or is thrown
+     *  by a subsequently invoked Valve, Filter, or Servlet
+     * @exception ServletException if a servlet error occurs, or is thrown
+     *  by a subsequently invoked Valve, Filter, or Servlet
      */
-    void invoke(Request request, Response response,
-                ValveContext context)
-            throws IOException, ServletException;
-
-
+    void invoke(Request request, Response response)
+        throws IOException, ServletException;
 }
