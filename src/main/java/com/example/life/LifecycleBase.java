@@ -6,13 +6,21 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * 简化代码逻辑
+ * 简化代码逻辑<p>
  * 同时也提供Support类，因为java是单继承
  *
  * @date 2021/12/19 10:20
  */
 public abstract class LifecycleBase implements Lifecycle {
+
+    /**
+     * 务必使用CopyOnWriteArrayList！<p>
+     * 例如effective java上说的，for each listener的时候，如果listener remove或add一个listener，
+     * 就会出现ConcurrentModificationException（因为sync是可重入的），
+     * 所以需要使用CopyOnWriteArrayList
+     */
     protected final List<LifecycleListener> listeners = new CopyOnWriteArrayList<> ();
+
     protected volatile boolean running = false;
 
     public void addLifecycleListener(LifecycleListener listener) {

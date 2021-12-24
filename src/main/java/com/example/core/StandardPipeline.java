@@ -41,6 +41,11 @@ public class StandardPipeline extends LifecycleBase implements Pipeline {
 
     protected Container container;
 
+    /**
+     * 决定抛出异常还是返回null
+     */
+    protected boolean strict = false;
+
     public StandardPipeline() {
         this (null);
     }
@@ -48,6 +53,10 @@ public class StandardPipeline extends LifecycleBase implements Pipeline {
     public StandardPipeline(Container container) {
         super ();
         setContainer (container);
+    }
+
+    public void setStrict(boolean strict) {
+        this.strict = strict;
     }
 
     @Override
@@ -103,7 +112,8 @@ public class StandardPipeline extends LifecycleBase implements Pipeline {
             first = basic;
         } else {
             //basic在末尾
-            throw new IllegalStateException ();
+            if (strict)
+                throw new IllegalStateException ();
         }
 //        startValve (valve);
 //        stopValve (valve);
@@ -212,8 +222,11 @@ public class StandardPipeline extends LifecycleBase implements Pipeline {
         }
     }
 
+    /**
+     *
+     */
     public Valve getFirst() {
-        if (basic == null) {
+        if (basic == null && strict) {
             throw new IllegalStateException ("未设置basic valve");
         }
 

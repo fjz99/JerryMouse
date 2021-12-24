@@ -100,7 +100,7 @@ public interface Pipeline extends Contained {
      * @return the Valve instance that has been distinguished as the basic
      * Valve for this Pipeline (if any).
      */
-//    Valve getFirst();
+    Valve getFirst();
 
     void invoke(Request request, Response response) throws IOException, ServletException;
 }

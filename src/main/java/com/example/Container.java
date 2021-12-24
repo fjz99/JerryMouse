@@ -1,17 +1,12 @@
 package com.example;
 
-
 import com.example.connector.Request;
 import com.example.connector.Response;
-import com.example.loader.Loader;
-import com.example.resource.AbstractContext;
-import com.example.session.Manager;
-import sun.security.krb5.Realm;
+import com.example.life.Lifecycle;
 
-import javax.naming.directory.DirContext;
 import javax.servlet.ServletException;
-import java.awt.event.ContainerListener;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.io.IOException;
 
 
@@ -64,10 +59,8 @@ import java.io.IOException;
  *
  * @author Craig R. McClanahan
  * @author Remy Maucherat
- * @version $Revision: 1.7 $ $Date: 2001/11/09 19:37:50 $
  */
-
-public interface Container {
+public interface Container extends Lifecycle {
 
 
     // ----------------------------------------------------- Manifest Constants
@@ -78,13 +71,6 @@ public interface Container {
      * by <code>addChild()</code>.
      */
     String ADD_CHILD_EVENT = "addChild";
-
-
-    /**
-     * The ContainerEvent event type sent when a Mapper is added
-     * by <code>addMapper()</code>.
-     */
-    String ADD_MAPPER_EVENT = "addMapper";
 
 
     /**
@@ -102,13 +88,6 @@ public interface Container {
 
 
     /**
-     * The ContainerEvent event type sent when a Mapper is removed
-     * by <code>removeMapper()</code>.
-     */
-    String REMOVE_MAPPER_EVENT = "removeMapper";
-
-
-    /**
      * The ContainerEvent event type sent when a valve is removed
      * by <code>removeValve()</code>, if this Container supports pipelines.
      */
@@ -117,83 +96,64 @@ public interface Container {
 
     // ------------------------------------------------------------- Properties
 
-
     /**
-     * Return descriptive information about this Container implementation and
-     * the corresponding version number, in the format
-     * <code>&lt;description&gt;/&lt;version&gt;</code>.
-     */
-    String getInfo();
-
-
-    /**
-     * Return the Loader with which this Container is associated.  If there is
-     * no associated Loader, return the Loader associated with our parent
-     * Container (if any); otherwise, return <code>null</code>.
-     */
-    Loader getLoader();
-
-
-    /**
-     * Set the Loader with which this Container is associated.
+     * Obtain the log to which events for this container should be logged.
      *
-     * @param loader The newly associated loader
+     * @return The Logger with which this Container is associated.  If there is
+     *         no associated Logger, return the Logger associated with the
+     *         parent Container (if any); otherwise return <code>null</code>.
      */
-    void setLoader(Loader loader);
-
-
-//    /**
-//     * Return the Logger with which this Container is associated.  If there is
-//     * no associated Logger, return the Logger associated with our parent
-//     * Container (if any); otherwise return <code>null</code>.
-//     */
-//    Logger getLogger();
-//
-//
-//    /**
-//     * Set the Logger with which this Container is associated.
-//     *
-//     * @param logger The newly associated Logger
-//     */
-//    void setLogger(Logger logger);
+//    Log getLogger();
 
 
     /**
-     * Return the Manager with which this Container is associated.  If there is
-     * no associated Manager, return the Manager associated with our parent
-     * Container (if any); otherwise return <code>null</code>.
+     * Return the logger name that the container will use.
+     * @return the abbreviated name of this container for logging messages
      */
-    Manager getManager();
+//    String getLogName();
 
 
     /**
-     * Set the Manager with which this Container is associated.
+     * Return the Pipeline object that manages the Valves associated with
+     * this Container.
      *
-     * @param manager The newly associated Manager
+     * @return The Pipeline
      */
-    void setManager(Manager manager);
-
+    Pipeline getPipeline();
 
     /**
-     * Return the Cluster with which this Container is associated.  If there is
-     * no associated Cluster, return the Cluster associated with our parent
-     * Container (if any); otherwise return <code>null</code>.
-     */
-//    Cluster getCluster();
-
-
-    /**
-     * Set the Cluster with which this Container is associated.
+     * Get the delay between the invocation of the backgroundProcess method on
+     * this container and its children. Child containers will not be invoked if
+     * their delay value is positive (which would mean they are using their own
+     * thread). Setting this to a positive value will cause a thread to be
+     * spawned. After waiting the specified amount of time, the thread will
+     * invoke the {@link #backgroundProcess()} method on this container and all
+     * children with non-positive delay values.
      *
-     * @param connector The Connector to be added
+     * @return The delay between the invocation of the backgroundProcess method
+     *         on this container and its children. A non-positive value
+     *         indicates that background processing will be managed by the
+     *         parent.
      */
-//    void setCluster(Cluster cluster);
+    int getBackgroundProcessorDelay();
+
+
+    /**
+     * Set the delay between the invocation of the execute method on this
+     * container and its children.
+     *
+     * @param delay The delay in seconds between the invocation of
+     *              backgroundProcess methods
+     */
+    void setBackgroundProcessorDelay(int delay);
 
 
     /**
      * Return a name string (suitable for use by humans) that describes this
      * Container.  Within the set of child containers belonging to a particular
      * parent, Container names must be unique.
+     *
+     * @return The human readable name of this container.
      */
     String getName();
 
@@ -204,16 +164,20 @@ public interface Container {
      * parent, Container names must be unique.
      *
      * @param name New name of this container
-     * @throws IllegalStateException if this Container has already been
-     *                               added to the children of a parent Container (after which the name
-     *                               may not be changed)
+     *
+     * @exception IllegalStateException if this Container has already been
+     *  added to the children of a parent Container (after which the name
+     *  may not be changed)
      */
     void setName(String name);
 
 
     /**
-     * Return the Container for which this Container is a child, if there is
-     * one.  If there is no defined parent, return <code>null</code>.
+     * Get the parent container.
+     *
+     * @return Return the Container for which this Container is a child, if
+     *         there is one. If there is no defined parent, return
+     *         <code>null</code>.
      */
     Container getParent();
 
@@ -224,22 +188,27 @@ public interface Container {
      * Container by throwing an exception.
      *
      * @param container Container to which this Container is being added
-     *                  as a child
-     * @throws IllegalArgumentException if this Container refuses to become
-     *                                  attached to the specified Container
+     *  as a child
+     *
+     * @exception IllegalArgumentException if this Container refuses to become
+     *  attached to the specified Container
      */
     void setParent(Container container);
 
 
     /**
-     * Return the parent class loader (if any) for web applications.
+     * Get the parent class loader.
+     *
+     * @return the parent class loader for this component. If not set, return
+     *         {@link #getParent()}.{@link #getParentClassLoader()}. If no
+     *         parent has been set, return the system class loader.
      */
     ClassLoader getParentClassLoader();
 
 
     /**
-     * Set the parent class loader (if any) for web applications.
-     * This call is meaningful only <strong>before</strong> a Loader has
+     * Set the parent class loader for this component. For {@link Context}s
+     * this call is meaningful only <strong>before</strong> a Loader has
      * been configured, and the specified value (if non-null) should be
      * passed as an argument to the class loader constructor.
      *
@@ -249,11 +218,13 @@ public interface Container {
 
 
     /**
-     * Return the Realm with which this Container is associated.  If there is
-     * no associated Realm, return the Realm associated with our parent
-     * Container (if any); otherwise return <code>null</code>.
+     * Obtain the Realm with which this Container is associated.
+     *
+     * @return The associated Realm; if there is no associated Realm, the
+     *         Realm associated with the parent Container (if any); otherwise
+     *         return <code>null</code>.
      */
-    Realm getRealm();
+//    Realm getRealm();
 
 
     /**
@@ -261,26 +232,15 @@ public interface Container {
      *
      * @param realm The newly associated Realm
      */
-    void setRealm(Realm realm);
+//    void setRealm(Realm realm);
 
 
     /**
-     * Return the Resources with which this Container is associated.  If there
-     * is no associated Resources object, return the Resources associated with
-     * our parent Container (if any); otherwise return <code>null</code>.
+     * Execute a periodic task, such as reloading, etc. This method will be
+     * invoked inside the classloading context of this container. Unexpected
+     * throwables will be caught and logged.
      */
-    AbstractContext getResources();
-
-
-    /**
-     * Set the Resources object with which this Container is associated.
-     *
-     * @param resources The newly associated Resources
-     */
-    void setResources(DirContext resources);
-
-
-    // --------------------------------------------------------- Public Methods
+    void backgroundProcess();
 
 
     /**
@@ -292,12 +252,13 @@ public interface Container {
      * to be attached to the specified Container, in which case it is not added
      *
      * @param child New child Container to be added
-     * @throws IllegalArgumentException if this exception is thrown by
-     *                                  the <code>setParent()</code> method of the child Container
-     * @throws IllegalArgumentException if the new child does not have
-     *                                  a name unique from that of existing children of this Container
-     * @throws IllegalStateException    if this Container does not support
-     *                                  child Containers
+     *
+     * @exception IllegalArgumentException if this exception is thrown by
+     *  the <code>setParent()</code> method of the child Container
+     * @exception IllegalArgumentException if the new child does not have
+     *  a name unique from that of existing children of this Container
+     * @exception IllegalStateException if this Container does not support
+     *  child Containers
      */
     void addChild(Container child);
 
@@ -311,16 +272,6 @@ public interface Container {
 
 
     /**
-     * Add the specified Mapper associated with this Container.
-     *
-     * @param mapper The corresponding Mapper implementation
-     * @throws IllegalArgumentException if this exception is thrown by
-     *                                  the <code>setContainer()</code> method of the Mapper
-     */
-    void addMapper(Mapper mapper);
-
-
-    /**
      * Add a property change listener to this component.
      *
      * @param listener The listener to add
@@ -329,70 +280,33 @@ public interface Container {
 
 
     /**
-     * Return the child Container, associated with this Container, with
-     * the specified name (if any); otherwise, return <code>null</code>
+     * Obtain a child Container by name.
      *
      * @param name Name of the child Container to be retrieved
+     *
+     * @return The child Container with the given name or <code>null</code> if
+     *         no such child exists.
      */
     Container findChild(String name);
 
 
     /**
-     * Return the set of children Containers associated with this Container.
-     * If this Container has no children, a zero-length array is returned.
+     * Obtain the child Containers associated with this Container.
+     *
+     * @return An array containing all children of this container. If this
+     *         Container has no children, a zero-length array is returned.
      */
     Container[] findChildren();
 
 
     /**
-     * Return the set of container listeners associated with this Container.
-     * If this Container has no registered container listeners, a zero-length
-     * array is returned.
+     * Obtain the container listeners associated with this Container.
+     *
+     * @return An array containing the container listeners associated with this
+     *         Container. If this Container has no registered container
+     *         listeners, a zero-length array is returned.
      */
     ContainerListener[] findContainerListeners();
-
-
-    /**
-     * Return the Mapper associated with the specified protocol, if there
-     * is one.  If there is only one defined Mapper, use it for all protocols.
-     * If there is no matching Mapper, return <code>null</code>.
-     *
-     * @param protocol Protocol for which to find a Mapper
-     */
-    Mapper findMapper(String protocol);
-
-
-    /**
-     * Return the set of Mappers associated with this Container.  If this
-     * Container has no Mappers, a zero-length array is returned.
-     */
-    Mapper[] findMappers();
-
-
-    /**
-     * Process the specified Request, and generate the corresponding Response,
-     * according to the design of this particular Container.
-     *
-     * @param request  Request to be processed
-     * @param response Response to be produced
-     * @throws IOException      if an input/output error occurred while
-     *                          processing
-     * @throws ServletException if a ServletException was thrown
-     *                          while processing this request
-     */
-    void invoke(Request request, Response response)
-            throws IOException, ServletException;
-
-
-    /**
-     * Return the child Container that should be used to process this Request,
-     * based upon its characteristics.  If no such child Container can be
-     * identified, return <code>null</code> instead.
-     *
-     * @param request Request being processed
-     * @param update  Update the Request to reflect the mapping selection?
-     */
-    Container map(Request request, boolean update);
 
 
     /**
@@ -413,14 +327,6 @@ public interface Container {
 
 
     /**
-     * Remove a Mapper associated with this Container, if any.
-     *
-     * @param mapper The Mapper to be removed
-     */
-    void removeMapper(Mapper mapper);
-
-
-    /**
      * Remove a property change listener from this component.
      *
      * @param listener The listener to remove
@@ -428,4 +334,78 @@ public interface Container {
     void removePropertyChangeListener(PropertyChangeListener listener);
 
 
+    /**
+     * Notify all container event listeners that a particular event has
+     * occurred for this Container.  The default implementation performs
+     * this notification synchronously using the calling thread.
+     *
+     * @param type Event type
+     * @param data Event data
+     */
+    void fireContainerEvent(String type, Object data);
+
+
+    /**
+     * Log a request/response that was destined for this container but has been
+     * handled earlier in the processing chain so that the request/response
+     * still appears in the correct access logs.
+     * @param request       Request (associated with the response) to log
+     * @param response      Response (associated with the request) to log
+     * @param time          Time taken to process the request/response in
+     *                      milliseconds (use 0 if not known)
+     * @param   useDefault  Flag that indicates that the request/response should
+     *                      be logged in the engine's default access log
+     */
+    void logAccess(Request request, Response response, long time,
+                   boolean useDefault);
+
+
+    /**
+     * Obtain the AccessLog to use to log a request/response that is destined
+     * for this container. This is typically used when the request/response was
+     * handled (and rejected) earlier in the processing chain so that the
+     * request/response still appears in the correct access logs.
+     *
+     * @return The AccessLog to use for a request/response destined for this
+     *         container
+     */
+//    AccessLog getAccessLog();
+
+
+    /**
+     * Obtain the number of threads available for starting and stopping any
+     * children associated with this container. This allows start/stop calls to
+     * children to be processed in parallel.
+     *
+     * @return The currently configured number of threads used to start/stop
+     *         children associated with this container
+     */
+    int getStartStopThreads();
+
+
+    /**
+     * Sets the number of threads available for starting and stopping any
+     * children associated with this container. This allows start/stop calls to
+     * children to be processed in parallel.
+     * @param   startStopThreads    The new number of threads to be used
+     */
+    void setStartStopThreads(int startStopThreads);
+
+
+    /**
+     * Obtain the location of CATALINA_BASE.
+     *
+     * @return  The location of CATALINA_BASE.
+     */
+    File getCatalinaBase();
+
+
+    /**
+     * Obtain the location of CATALINA_HOME.
+     *
+     * @return The location of CATALINA_HOME.
+     */
+    File getCatalinaHome();
+
+    void invoke(Request request, Response response) throws IOException, ServletException;
 }

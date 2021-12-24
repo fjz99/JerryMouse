@@ -77,7 +77,7 @@ public final class HttpProcessor extends LifecycleBase {
 
             try {
                 //container.invoke
-                connector.getContainer ().invoke (request, response);
+                connector.getContainer ().getPipeline ().invoke (request, response);
             } catch (Exception e) {
                 e.printStackTrace ();
                 response.sendError (HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

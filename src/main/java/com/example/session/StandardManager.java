@@ -1,6 +1,7 @@
 package com.example.session;
 
 import com.example.Container;
+import com.example.Context;
 import com.example.life.LifecycleException;
 import com.example.loader.Loader;
 import com.example.util.EnhancedObjectInputStream;
@@ -50,7 +51,7 @@ public class StandardManager extends AbstractManager {
         BufferedInputStream bufferedInputStream = new BufferedInputStream (fileInputStream);
         ClassLoader classLoader = Optional
                 .ofNullable (getContext ())
-                .map (Container::getLoader)
+                .map (Context::getLoader)
                 .map (Loader::getClassLoader)
                 .orElse (null);
         if (classLoader == null) {
