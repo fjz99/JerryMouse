@@ -141,6 +141,7 @@ public abstract class AbstractManager
 
     /**
      * 检查内存中的session超时
+     * 此方法被子类重写了！从而实现不同的expire校验功能！
      */
     public void processExpires() {
         Session[] sessions = findSessions ();
@@ -304,6 +305,7 @@ public abstract class AbstractManager
         for (Map.Entry<String, Session> e : sessions.entrySet ()) {
             Session session = e.getValue ();
             try {
+                //??这会触发expire回调吧。。
                 session.expire ();//expire会移除map，然后recycle等
             } finally {
                 session.recycle ();//保证一定执行recycle，也可以防止内存泄漏

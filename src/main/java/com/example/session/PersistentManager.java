@@ -149,13 +149,11 @@ public class PersistentManager
     }
 
     /**
-     * 外部方法实现线程安全
      * 换出，而且remove了
      */
     /*
      * swapOut有风险，因为findSessions返回的是快照，可能在swapOut的时候已经remove了一个session
-     * 这就导致把删除的会话换到外存了
-     * <p>
+     * 这就导致把删除的会话换到外存了;
      * 这个是安全的，因为remove只会在session.expire中被调用，而那个方法中，必须加synchronized(this)
      */
     protected void swapOut(Session session) throws IOException {
