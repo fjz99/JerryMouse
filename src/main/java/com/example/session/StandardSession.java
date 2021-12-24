@@ -9,11 +9,9 @@ import java.beans.PropertyChangeSupport;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.security.Principal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -22,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * CrawlerSessionManagerValve（防止网络爬虫创建过多的session，鉴别爬虫的依据是user-agent）<p>
  * 复杂的地方在于各种listener，有内部使用的，也有servlet标准的<p>
  * Principal暂时没有实现
- * todo containerCall back
+ * todo container Callback
  *
  * @date 2021/12/21 16:06
  */
@@ -53,8 +51,9 @@ public class StandardSession implements Session, HttpSession, Serializable {
             new PropertyChangeSupport (this);
     /**
      * 这个是内部使用的listener
+     * CopyOnWriteArrayList !!!!
      */
-    protected transient List<SessionListener> listeners = new ArrayList<> ();
+    protected transient List<SessionListener> listeners = new CopyOnWriteArrayList<> ();
     /**
      * session存储的内容
      */
@@ -235,14 +234,9 @@ public class StandardSession implements Session, HttpSession, Serializable {
             return;
         }
 
-        SessionListener[] sessionListeners;
         SessionEvent event = new SessionEvent (this, type, data);
-        //获得一个副本
-        synchronized (listeners) {
-            sessionListeners = listeners.toArray (EMPTY_SESSION_LISTENER_ARRAY);
-        }
 
-        for (SessionListener sessionListener : sessionListeners) {
+        for (SessionListener sessionListener : listeners) {
             sessionListener.sessionEvent (event);
         }
     }
@@ -637,9 +631,7 @@ public class StandardSession implements Session, HttpSession, Serializable {
 
     @Override
     public void addSessionListener(SessionListener listener) {
-        synchronized (listeners) {
-            listeners.add (listener);
-        }
+        listeners.add (listener);
     }
 
     /**
@@ -690,9 +682,7 @@ public class StandardSession implements Session, HttpSession, Serializable {
 
     @Override
     public void removeSessionListener(SessionListener listener) {
-        synchronized (listeners) {
-            listeners.remove (listener);
-        }
+        listeners.remove (listener);
     }
 
     @Override
@@ -836,7 +826,7 @@ public class StandardSession implements Session, HttpSession, Serializable {
     }
 
     /**
-     * todo序列化auth信息<p>
+     * todo 序列化auth信息<p>
      * 序列化map的时候，为了减少重建开销，选择自定义中间逻辑表示
      * 即size，entry[]
      */

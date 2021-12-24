@@ -222,9 +222,7 @@ public class StandardPipeline extends LifecycleBase implements Pipeline {
         }
     }
 
-    /**
-     *
-     */
+
     public Valve getFirst() {
         if (basic == null && strict) {
             throw new IllegalStateException ("未设置basic valve");

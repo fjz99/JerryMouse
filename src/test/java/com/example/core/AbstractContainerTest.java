@@ -52,6 +52,16 @@ class AbstractContainerTest {
         Thread.sleep (100);
     }
 
+    @Test
+    void asyncStart() throws LifecycleException, InterruptedException {
+        a.addChild (b);
+        a.addChild (c);
+        a.setStartStopThreads (4);
+        a.start ();
+        Thread.sleep (500);
+        a.stop ();
+    }
+
     private static class C extends AbstractContainer {
         @Override
         public void backgroundProcess() {

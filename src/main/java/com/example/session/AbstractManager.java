@@ -227,8 +227,8 @@ public abstract class AbstractManager
         int oldMaxActiveSessions = this.maxActiveSessions;
         this.maxActiveSessions = maxActiveSessions;
         support.firePropertyChange ("maxActiveSessions",
-                Integer.valueOf (oldMaxActiveSessions),
-                Integer.valueOf (this.maxActiveSessions));
+                oldMaxActiveSessions,
+                this.maxActiveSessions);
     }
 
     @Override

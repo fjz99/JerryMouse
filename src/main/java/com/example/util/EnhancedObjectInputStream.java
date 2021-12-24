@@ -9,6 +9,7 @@ import java.lang.reflect.Proxy;
 /**
  * 主要就是加了classLoader
  * 因为很多时候，反序列化也需要规定类加载器，即对象的实例必须对应特定类加载器加载的类
+ * 抄的源码
  *
  * @date 2021/12/22 11:41
  */
@@ -42,7 +43,7 @@ public class EnhancedObjectInputStream extends ObjectInputStream {
 
     @Override
     protected Class<?> resolveProxyClass(String[] interfaces)
-            throws IOException, ClassNotFoundException {
+            throws ClassNotFoundException {
 
         Class<?>[] cinterfaces = new Class[interfaces.length];
         for (int i = 0; i < interfaces.length; i++) {
