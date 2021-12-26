@@ -111,6 +111,9 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
         support.firePropertyChange ("parent", oldParent, this.parent);
     }
 
+    /**
+     * 命名有问题，本质就是获得classLoader而已
+     */
     @Override
     public ClassLoader getParentClassLoader() {
         if (parentClassLoader != null) {
