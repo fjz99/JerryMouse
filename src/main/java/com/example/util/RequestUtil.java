@@ -116,7 +116,6 @@ public final class RequestUtil {
             }
         }
         return (result.toString ());
-
     }
 
 
@@ -175,7 +174,6 @@ public final class RequestUtil {
 
         // Return the normalized path that we have completed
         return (normalized);
-
     }
 
 
@@ -241,7 +239,6 @@ public final class RequestUtil {
         }
 
         return cookies;
-
     }
 
 
@@ -269,7 +266,6 @@ public final class RequestUtil {
             data.getBytes (0, len, bytes, 0);
             parseParameters (map, bytes, encoding);
         }
-
     }
 
 
@@ -284,9 +280,7 @@ public final class RequestUtil {
      *                                  by a valid 2-digit hexadecimal number
      */
     public static String URLDecode(String str) {
-
         return URLDecode (str, null);
-
     }
 
 
@@ -299,7 +293,6 @@ public final class RequestUtil {
      *                                  by a valid 2-digit hexadecimal number
      */
     public static String URLDecode(String str, String enc) {
-
         if (str == null)
             return (null);
 
@@ -308,7 +301,6 @@ public final class RequestUtil {
         str.getBytes (0, len, bytes, 0);
 
         return URLDecode (bytes, enc);
-
     }
 
 
@@ -333,7 +325,6 @@ public final class RequestUtil {
      *                                  by a valid 2-digit hexadecimal number
      */
     public static String URLDecode(byte[] bytes, String enc) {
-
         if (bytes == null)
             return (null);
 
@@ -358,7 +349,6 @@ public final class RequestUtil {
             }
         }
         return new String (bytes, 0, ox);
-
     }
 
 
@@ -452,7 +442,6 @@ public final class RequestUtil {
                 putMapEntry (map, key, value);
             }
         }
-
     }
 
 }

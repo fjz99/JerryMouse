@@ -281,4 +281,9 @@ public abstract class AbstractResponse implements Response, ServletResponse {
         writer = null;
         err = false;
     }
+
+    @Override
+    public ServletResponse getResponse() {
+        return this;
+    }
 }

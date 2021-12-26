@@ -17,6 +17,8 @@
 package com.example;
 
 
+import com.example.descriptor.FilterDefinition;
+import com.example.descriptor.FilterMapping;
 import com.example.loader.Loader;
 import com.example.resource.AbstractContext;
 import com.example.session.Manager;
@@ -1886,4 +1888,32 @@ public interface Context extends Container, ContextBind {
     void setCreateUploadTargets(boolean createUploadTargets);
 
     AbstractContext getResources();
+
+    /**
+     * @param filterName Filter name to look up
+     * @return the filter definition for the specified filter name, if any;
+     * otherwise return <code>null</code>.
+     */
+    FilterDefinition findFilterDef(String filterName);
+
+
+    /**
+     * @return the set of defined filters for this Context.
+     */
+    FilterDefinition[] findFilterDefs();
+
+
+    /**
+     * @return the set of filter mappings for this Context.
+     */
+    FilterMapping[] findFilterMaps();
+
+    /**
+     * Find and return the initialized <code>FilterConfig</code> for the
+     * specified filter name, if any; otherwise return <code>null</code>.
+     *
+     * @param name Name of the desired filter
+     * @return the filter config object
+     */
+    FilterConfig findFilterConfig(String name);
 }

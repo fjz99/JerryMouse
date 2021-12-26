@@ -12,8 +12,10 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Objects;
 
+import static com.example.filter.Constants.SYSTEM_FILTER_PREFIX;
+
 /**
- * 用于在filter初始化的时候把配置传进去，
+ * 用于在filter初始化的时候把配置传进去，还有维护filter的生命周期
  * 类似地，{@link javax.servlet.ServletConfig}用于设置servlet初始化的配置，
  * 可以类比为配置实体类
  * 和{@link FilterDefinition}的区别在于，{@link FilterDefinition}是内部的
@@ -24,9 +26,10 @@ import java.util.Objects;
  */
 @Slf4j
 public final class FilterConfigImpl implements FilterConfig {
+
     private final Context context;
-    private Filter filter;
     private final FilterDefinition filterDefinition;
+    private Filter filter;
 
     public FilterConfigImpl(Context context, FilterDefinition filterDefinition) {
         Objects.requireNonNull (context);
@@ -49,19 +52,26 @@ public final class FilterConfigImpl implements FilterConfig {
     }
 
     @SuppressWarnings("unchecked")
-    private Filter getFilter() {
+    public Filter getFilter() {
         if (filter != null) {
             return filter;
         }
 
-        ClassLoader classLoader = context.getLoader ().getClassLoader ();
-        String filterName = filterDefinition.getFilterClass ();
+        //这个要区分filter的类型，内置filter不要用context的loader进行加载
+        ClassLoader classLoader;
+        String filterClass = filterDefinition.getFilterClass ();
+        if (filterClass.startsWith (SYSTEM_FILTER_PREFIX)) {
+            classLoader = getClass ().getClassLoader ();
+        } else {
+            classLoader = context.getLoader ().getClassLoader ();
+        }
+
         Class<Filter> clazz = null;
         try {
-            clazz = (Class<Filter>) classLoader.loadClass (filterName);
+            clazz = (Class<Filter>) classLoader.loadClass (filterClass);
         } catch (ClassNotFoundException e) {
             e.printStackTrace ();
-            log.error ("filter class {} not found", filterName);
+            log.error ("filter class {} not found", filterClass);
         }
 
         if (clazz != null) {
@@ -108,5 +118,15 @@ public final class FilterConfigImpl implements FilterConfig {
 
     public String getFilterClass() {
         return filterDefinition.getFilterClass ();
+    }
+
+    /**
+     * 释放资源
+     */
+    public void release() {
+        if (filter != null) {
+            filter.destroy ();
+            filter = null;
+        }
     }
 }

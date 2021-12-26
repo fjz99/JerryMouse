@@ -320,8 +320,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
                         value.start ();
                     }
                 } catch (LifecycleException e) {
-                    e.printStackTrace ();
-                    log.error ("start {} 失败", value.getName ());
+                    log.error ("start " + value.getName () + " 失败", e);
                 }
             });
             jobs.add (future);
@@ -499,7 +498,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
 
             } catch (Throwable e) {
                 e.printStackTrace ();
-                log.error (threadName () + ":线程异常 {}", e.toString ());
+                log.error (threadName () + ":线程异常", e);
             } finally {
                 if (container instanceof Context) {
                     //把类加载器换回来

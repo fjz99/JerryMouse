@@ -3,7 +3,9 @@ package com.example.connector;
 
 import com.example.connector.http.HttpConnector;
 
+import javax.servlet.Servlet;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -227,5 +229,8 @@ public interface Response {
 //    void sendAcknowledgement()
 //            throws IOException;
 
-
+    /**
+     * @return 返回facade
+     */
+    ServletResponse getResponse();
 }

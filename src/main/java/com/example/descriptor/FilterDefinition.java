@@ -10,7 +10,20 @@ import java.util.Map;
 /**
  * 描述filter配置的实体类
  * 对应的就是{@link javax.servlet.annotation.WebFilter}
- * 或者web.xml中的配置
+ * 或者web.xml中配置的<code>&lt;filter&gt;<code/>标签
+ * <pre>{@code
+ *
+ *   <filter>
+ *       <filter-name>filterDemo1</filter-name>
+ *       <filter-class>com.oracle.filter.FilterDemo1</filter-class>
+ *   </filter>
+ *   <filter-mapping>
+ *       <filter-name>filterDemo1</filter-name>
+ *       <url-pattern>/*</url-pattern>
+ *       <!-- /*是对所有的文件进行拦截 -->
+ *   </filter-mapping>
+ *
+ * }</pre>
  *
  * @date 2021/12/24 21:43
  */
