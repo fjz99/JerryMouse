@@ -6,6 +6,7 @@ import com.example.connector.Response;
 import com.example.life.Lifecycle;
 import com.example.life.LifecycleBase;
 import com.example.life.LifecycleException;
+import com.example.loader.Loader;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.ServletException;
@@ -35,6 +36,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
     protected Map<String, Container> children = new ConcurrentHashMap<> ();
     protected Container parent;
     protected ClassLoader parentClassLoader;
+    protected Loader loader;
     /**
      * 务必使用CopyOnWriteArrayList！<p>
      * 例如effective java上说的，for each listener的时候，如果listener remove或add一个listener，
@@ -97,6 +99,16 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
         String oldName = this.name;
         this.name = name;
         support.firePropertyChange ("name", oldName, this.name);
+    }
+
+    public Loader getLoader() {
+        return loader == null ?
+                (getParent () == null ? null : getParent ().getLoader ())
+                : loader;
+    }
+
+    public void setLoader(Loader loader) {
+        this.loader = loader;
     }
 
     @Override

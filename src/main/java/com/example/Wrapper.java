@@ -55,21 +55,6 @@ public interface Wrapper extends Container {
      */
     void setAvailable(long available);
 
-
-    /**
-     * Return the context-relative URI of the JSP file for this servlet.
-     */
-    String getJspFile();
-
-
-    /**
-     * Set the context-relative URI of the JSP file for this servlet.
-     *
-     * @param jspFile JSP file URI
-     */
-    void setJspFile(String jspFile);
-
-
     /**
      * Return the load-on-startup order value (negative value means
      * load on first call).
@@ -195,22 +180,6 @@ public interface Wrapper extends Container {
 
 
     /**
-     * Return the security role link for the specified security role
-     * reference name, if any; otherwise return <code>null</code>.
-     *
-     * @param name Security role reference used within this servlet
-     */
-    String findSecurityReference(String name);
-
-
-    /**
-     * Return the set of security role reference names associated with
-     * this servlet, if any; otherwise return a zero-length array.
-     */
-    String[] findSecurityReferences();
-
-
-    /**
      * Load and initialize an instance of this servlet, if there is not already
      * at least one initialized instance.  This can be used, for example, to
      * load servlets that are marked in the deployment descriptor to be loaded
@@ -237,14 +206,6 @@ public interface Wrapper extends Container {
      * @param listener The listener to remove
      */
 //    void removeInstanceListener(InstanceListener listener);
-
-
-    /**
-     * Remove any security role reference for the specified role name.
-     *
-     * @param name Security role used within this servlet to be removed
-     */
-    void removeSecurityReference(String name);
 
 
     /**

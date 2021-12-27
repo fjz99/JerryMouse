@@ -20,6 +20,7 @@ import static com.example.core.Constants.SYSTEM_PREFIX;
 /**
  * 不支持{@link javax.servlet.SingleThreadModel}
  * 这个类可能被多线程访问
+ * 和{@link com.example.filter.FilterConfigImpl}类似
  *
  * @date 2021/12/26 18:27
  */
@@ -91,16 +92,6 @@ public final class StandardWrapper extends AbstractContainer implements Wrapper,
         else
             this.available = 0L;
         support.firePropertyChange ("available", oldAvailable, this.available);
-    }
-
-    @Override
-    public String getJspFile() {
-        throw new UnsupportedOperationException ();
-    }
-
-    @Override
-    public void setJspFile(String jspFile) {
-        throw new UnsupportedOperationException ();
     }
 
     @Override
@@ -225,6 +216,7 @@ public final class StandardWrapper extends AbstractContainer implements Wrapper,
             log.error ("", e);
             throw new ServletException ();
         }
+
         fireContainerEvent ("load", this);
         return servlet;
     }
@@ -256,16 +248,6 @@ public final class StandardWrapper extends AbstractContainer implements Wrapper,
         return parameters.keySet ().toArray (new String[0]);
     }
 
-    @Override
-    public String findSecurityReference(String name) {
-        throw new UnsupportedOperationException ();
-    }
-
-    @Override
-    public String[] findSecurityReferences() {
-        throw new UnsupportedOperationException ();
-    }
-
     /**
      * 和{@link #allocate()}不同，这个是一定load一个Servlet
      */
@@ -278,11 +260,6 @@ public final class StandardWrapper extends AbstractContainer implements Wrapper,
     public void removeInitParameter(String name) {
         parameters.remove (name);
         fireContainerEvent ("removeInitParameter", name);
-    }
-
-    @Override
-    public void removeSecurityReference(String name) {
-        throw new UnsupportedOperationException ();
     }
 
     /**

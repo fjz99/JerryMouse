@@ -682,6 +682,11 @@ public class WebappClassLoader
         return file.getCanonicalFile ().toURL ();
     }
 
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
     /**
      * jar包的位置等信息
      */

@@ -2,6 +2,7 @@ package com.example.filter;
 
 import com.example.Context;
 import com.example.descriptor.FilterDefinition;
+import com.example.util.ArgumentChecker;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.Filter;
@@ -32,8 +33,7 @@ public final class FilterConfigImpl implements FilterConfig {
     private Filter filter;
 
     public FilterConfigImpl(Context context, FilterDefinition filterDefinition) {
-        Objects.requireNonNull (context);
-        Objects.requireNonNull (filterDefinition);
+        ArgumentChecker.requireNonNull (context, filterDefinition);
 
         this.context = context;
         this.filterDefinition = filterDefinition;
@@ -129,4 +129,5 @@ public final class FilterConfigImpl implements FilterConfig {
             filter = null;
         }
     }
+
 }

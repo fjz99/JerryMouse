@@ -64,4 +64,6 @@ public interface Lifecycle {
      */
     void stop() throws LifecycleException;
 
+    boolean isRunning();
+
 }

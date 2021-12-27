@@ -3,6 +3,7 @@ package com.example;
 import com.example.connector.Request;
 import com.example.connector.Response;
 import com.example.life.Lifecycle;
+import com.example.loader.Loader;
 
 import javax.servlet.ServletException;
 import java.beans.PropertyChangeListener;
@@ -111,6 +112,10 @@ public interface Container extends Lifecycle {
      * @return the abbreviated name of this container for logging messages
      */
 //    String getLogName();
+
+    Loader getLoader();
+
+    void setLoader(Loader loader);
 
 
     /**

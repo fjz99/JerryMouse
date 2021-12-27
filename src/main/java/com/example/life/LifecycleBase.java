@@ -78,4 +78,8 @@ public abstract class LifecycleBase implements Lifecycle {
         }
     }
 
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
 }
