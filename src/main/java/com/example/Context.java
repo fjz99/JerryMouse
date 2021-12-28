@@ -1260,4 +1260,12 @@ public interface Context extends Container, ContextBind {
      * @return the filter config object
      */
     FilterConfig findFilterConfig(String name);
+
+    boolean isAvailable();
+
+    void setAvailable(boolean available);
+
+    void incrementInProgressAsyncCount();
+
+    void decrementInProgressAsyncCount();
 }

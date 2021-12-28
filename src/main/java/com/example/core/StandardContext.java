@@ -1,6 +1,11 @@
 package com.example.core;
 
-import com.example.*;
+import com.example.Container;
+import com.example.Context;
+import com.example.Globals;
+import com.example.Wrapper;
+import com.example.connector.Request;
+import com.example.connector.Response;
 import com.example.descriptor.FilterDefinition;
 import com.example.descriptor.FilterMapping;
 import com.example.filter.FilterConfigImpl;
@@ -12,7 +17,7 @@ import com.example.resource.AbstractContext;
 import com.example.resource.FileDirContext;
 import com.example.session.Manager;
 import com.example.session.StandardManager;
-import com.example.util.RequestUtil;
+import com.example.util.URLEncoder;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.*;
@@ -22,14 +27,16 @@ import javax.servlet.http.HttpSessionListener;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static com.example.life.EventType.*;
 
 /**
  * 主要是get set remove方法多
@@ -50,15 +57,16 @@ public final class StandardContext extends AbstractContainer implements Context 
      */
     private final Map<String, FilterDefinition> filterDefinitions = new ConcurrentHashMap<> ();
     private final Object applicationListenersLock = new Object ();
-    /**
-     * The set of application listeners that are required to have limited access
-     * to ServletContext methods. See Servlet 3.1 section 4.4.
-     */
-    private final Object applicationParametersLock = new Object ();
+
     private final ReadWriteLock loaderLock = new ReentrantReadWriteLock ();
     private final ReadWriteLock resourcesLock = new ReentrantReadWriteLock ();
     private final Object watchedResourcesLock = new Object ();
     private final Object welcomeFilesLock = new Object ();
+    private final Object pausedLock = new Object ();
+    /**
+     * The ordered set of ServletContainerInitializers for this web application.
+     */
+    private final Map<ServletContainerInitializer, Set<Class<?>>> initializers = new LinkedHashMap<> ();
     /**
      * The servlet mappings for this web application, keyed by
      * matching pattern.
@@ -73,7 +81,6 @@ public final class StandardContext extends AbstractContainer implements Context 
      */
     private final List<String> welcomeFiles = new ArrayList<> ();
     private final Set<String> resourceOnlyServlets = new HashSet<> ();
-    private final Set<Servlet> createdServlets = new HashSet<> ();
     /**
      * The set of application listener class names configured for this
      * application, in the order they were encountered in the resulting merged
@@ -92,11 +99,15 @@ public final class StandardContext extends AbstractContainer implements Context 
      * instances directly to this list before the application starts.
      */
     private final List<Object> applicationLifecycleListeners = new ArrayList<> ();
+    /**
+     * 统计正在处理的请求数，由外部valve设置
+     */
+    private final AtomicLong inProgressAsyncCount = new AtomicLong (0);
     private Manager manager = null;
     /**
      * The ServletContext implementation associated with this Context.
      */
-    private ServletContextImpl context = null;
+    private ServletContextImpl servletContext = null;
     /**
      * Allow multipart/form-data requests to be parsed even when the
      * target servlet doesn't specify @MultipartConfig or have a
@@ -146,10 +157,6 @@ public final class StandardContext extends AbstractContainer implements Context 
      */
     private String originalDocBase = null;
     /**
-     * The privileged flag for this web application.
-     */
-    private boolean privileged = false;
-    /**
      * Should the next call to <code>addWelcomeFile()</code> cause replacement
      * of any existing welcome files?  This will be set before processing the
      * web application's deployment descriptor, so that application specified
@@ -163,6 +170,8 @@ public final class StandardContext extends AbstractContainer implements Context 
     private int sessionTimeout = 30;
     /**
      * Amount of ms that the container will wait for servlets to unload.
+     * 假设要stop的话，如果还有正在处理的请求咋办？unloadDelay指定的就是等待的最大时间，超过时间后就会返回
+     * 当stop开始调用时，就会拒绝新来的请求了
      */
     private long unloadDelay = 2000;
     /**
@@ -216,12 +225,54 @@ public final class StandardContext extends AbstractContainer implements Context 
     private String defaultWebXml;
     private boolean webXmlValidation = true;
 
+    public String getDefaultWebXml() {
+        return defaultWebXml;
+    }
+
+    public String getDefaultContextXml() {
+        return defaultContextXml;
+    }
+
+    public void setDefaultContextXml(String defaultContextXml) {
+        this.defaultContextXml = defaultContextXml;
+    }
+
+    public boolean isAvailable() {
+        return available;
+    }
+
+    public void setAvailable(boolean available) {
+        boolean oldAvailable = this.available;
+        this.available = available;
+        support.firePropertyChange ("available", oldAvailable, this.available);
+    }
+
     @Override
-    public void stop() throws LifecycleException {
+    public synchronized void stop() throws LifecycleException {
         verifyRunning ();
 
-        log.info ("Stopping {}", getDisplayName ());
+        fireLifecycleEvent (BEFORE_STOP_EVENT, this);
+        log.info ("Stopping {}, waiting for finishing {} request(s).", getDisplayName (), getInProgressAsyncCount ());
+
         running = false;
+        setAvailable (false);//我自己加的，让wrapper的valve发出404
+
+        //等待一段时间，看看是否处理完所有的请求了
+        long limit = System.currentTimeMillis () + unloadDelay;
+        while (getInProgressAsyncCount () > 0 && System.currentTimeMillis () < limit) {
+            try {
+                Thread.sleep (50);
+            } catch (InterruptedException ignored) {
+                break;
+            }
+        }
+        if (getInProgressAsyncCount () == 0) {
+            log.info ("All request(s) stopped.");
+        } else {
+            log.warn ("{} reqs hasn't sopped yet.", getInProgressAsyncCount ());
+        }
+
+        running = false;//后面就无法接受新的请求了
         ClassLoader bind = bind (null);
         try {
             super.stopThread ();//先关闭
@@ -232,11 +283,14 @@ public final class StandardContext extends AbstractContainer implements Context 
                 }
             }
 
-            if (getManager () instanceof Lifecycle) {
+            //因为可能启动失败，这样可以避免fail loudly
+            if (getManager () instanceof Lifecycle &&
+                    !((Lifecycle) getManager ()).isRunning ()) {
                 ((Lifecycle) getManager ()).stop ();
             }
 
-            if (getPipeline () instanceof Lifecycle) {
+            if (getPipeline () instanceof Lifecycle &&
+                    !((Lifecycle) getPipeline ()).isRunning ()) {
                 ((Lifecycle) getPipeline ()).stop ();
             }
 
@@ -244,7 +298,8 @@ public final class StandardContext extends AbstractContainer implements Context 
             stopFilters ();
 
             //最后关闭
-            if (getLoader () instanceof Lifecycle) {
+            if (getLoader () instanceof Lifecycle &&
+                    !((Lifecycle) getLoader ()).isRunning ()) {
                 ((Lifecycle) getLoader ()).stop ();
             }
         } finally {
@@ -257,6 +312,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             log.error ("Error resetting context " + this + " " + ex, ex);
         }
 
+        setAvailable (false);
         log.info ("Context {} stopped.", getDisplayName ());
     }
 
@@ -265,30 +321,71 @@ public final class StandardContext extends AbstractContainer implements Context 
             removeChild (child);
         }
 
+        servletContext = null;
         applicationListeners.clear ();
         applicationEventListeners.clear ();
         applicationLifecycleListeners.clear ();
 
+        initializers.clear ();
+
         log.debug ("reset context {}", getDisplayName ());
     }
 
+    /**
+     * 给servletContext设置init param
+     */
+    private void setParameters() {
+        Map<String, String> mergedParams = new HashMap<> ();
+
+        String[] names = findParameters ();
+        for (String s : names) {
+            mergedParams.put (s, findParameter (s));
+        }
+
+//        ApplicationParameter params[] = findApplicationParameters ();
+//        for (ApplicationParameter param : params) {
+//            if (param.getOverride ()) {
+//                if (mergedParams.get (param.getName ()) == null) {
+//                    mergedParams.put (param.getName (),
+//                            param.getValue ());
+//                }
+//            } else {
+//                mergedParams.put (param.getName (), param.getValue ());
+//            }
+//        }
+
+        ServletContext sc = getServletContext ();
+        for (Map.Entry<String, String> entry : mergedParams.entrySet ()) {
+            sc.setInitParameter (entry.getKey (), entry.getValue ());
+        }
+    }
+
+    /**
+     * 先是loader、再是child container、再是pipeline
+     * 启动完子组件之后，检查configure标志位，如果没问题，那就启动filter和manager和listener
+     * 如果启动失败，那就stop(?)
+     */
     @Override
-    public void start() throws LifecycleException {
+    public synchronized void start() throws LifecycleException {
         verifyStopped ();
+        fireLifecycleEvent (BEFORE_START_EVENT, this);
 
         log.debug ("starting {}", getDisplayName ());
         running = true;
-        setConfigured (false);
-        boolean ok;
+        setConfigured (false);//后面会通过监听器设置为true
+        setAvailable (false);
+        boolean ok = true;
 
         postWorkDirectory ();
 
         if (getResources () == null) {
+            log.debug ("Configure FileDirContext Resource.");
             FileDirContext resources = new FileDirContext ();
             resources.setDocBase (getDocBase ());
             setResources (resources);
         }
         if (getLoader () == null) {
+            log.debug ("Configure default Loader.");
             setLoader (new WebappLoader (getParentClassLoader ()));
         }
 
@@ -301,29 +398,51 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
             unbind (bind);
 
-
             bind = bind (null);
-            if (pipeline instanceof Lifecycle) {
-                ((Lifecycle) pipeline).start ();
-            }
-
             for (Container child : findChildren ()) {
                 if (!child.isRunning ()) {
                     child.start ();
                 }
             }
 
+            if (pipeline instanceof Lifecycle) {
+                ((Lifecycle) pipeline).start ();
+            }
+
+            //启动完所有的子组件，就开始检查
+            //configured会被监听器设置，所以启动所有的子组件之后，如果configure是false的话，那就启动失败了
+            if (!getConfigured ())
+                ok = false;
+
+            fireLifecycleEvent (START_EVENT, this);
             if (getManager () == null) {
                 setManager (new StandardManager ());//set的时候会start
             }
 
-            getServletContext ().setAttribute (Globals.RESOURCES_ATTR, getResources ());
-            getServletContext ().setAttribute (Globals.WEBAPP_VERSION, getWebappVersion ());
+            if (ok) {
+                getServletContext ().setAttribute (Globals.RESOURCES_ATTR, getResources ());
+                getServletContext ().setAttribute (Globals.WEBAPP_VERSION, getWebappVersion ());
+            }
 
-            ok = loadOnStartUp (findChildren ());
+            setParameters ();
+
+            for (Map.Entry<ServletContainerInitializer, Set<Class<?>>> entry :
+                    initializers.entrySet ()) {
+                try {
+                    entry.getKey ().onStartup (entry.getValue (),
+                            getServletContext ());
+                } catch (ServletException e) {
+                    log.error ("standardContext.ServletContainerInitializerFail", e);
+                    ok = false;
+                    break;
+                }
+            }
+
+            ok = ok && loadOnStartUp (findChildren ());
             ok = ok && startListeners () && startFilters ();
 
-            if (ok && (getManager () instanceof Lifecycle)) {
+            if (ok && (getManager () instanceof Lifecycle) &&
+                    !((Lifecycle) getManager ()).isRunning ()) {
                 ((Lifecycle) getManager ()).start ();
             }
 
@@ -335,10 +454,19 @@ public final class StandardContext extends AbstractContainer implements Context 
         }
 
         if (ok) {
+            setAvailable (true);
             log.info ("Context {} started.", getDisplayName ());
         } else {
+            setAvailable (false);
+            try {
+                stop ();
+            } catch (Throwable e) {
+                log.error ("", e);
+            }
             log.error ("Context {} started failed.", getDisplayName ());
         }
+
+        fireLifecycleEvent (AFTER_START_EVENT, this);
     }
 
     public String getWorkDir() {
@@ -353,7 +481,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     }
 
     private void postWorkDirectory() {
-        //默认的th
+        //默认的
         String workDir = getWorkDir ();
         if (workDir == null || workDir.length () == 0) {
 
@@ -408,7 +536,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
         }
 
-        if (context == null) {
+        if (servletContext == null) {
             getServletContext ();
         }
 
@@ -416,7 +544,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             log.warn ("创建work dir {} failed.", getWorkDir ());
         }
 
-        context.setAttribute (ServletContext.TEMPDIR, work);//!!!!!!!!temp dir 就是 work dir。。
+        servletContext.setAttribute (ServletContext.TEMPDIR, work);//!!!!!!!!temp dir 就是 work dir。。
     }
 
     /**
@@ -536,6 +664,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     public void backgroundProcess() {
         if (getLoader () != null) {
             try {
+                //modified检查功能,如果返回true，那就调用context的reload方法
                 getLoader ().backgroundProcess ();
             } catch (Throwable e) {
                 log.error ("", e);
@@ -770,8 +899,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         if (invalid) {
             log.warn ("standardContext.pathInvalid");
         }
-//        todo
-//        encodedPath = RequestUtil..e (this.path, StandardCharsets.UTF_8);
+        encodedPath = URLEncoder.DEFAULT.encode (this.path, StandardCharsets.UTF_8);
         if (getName () == null) {
             setName (this.path);
         }
@@ -807,11 +935,10 @@ public final class StandardContext extends AbstractContainer implements Context 
 
     @Override
     public ServletContext getServletContext() {
-//        if (context == null) {
-//            context = new ApplicationContext (this);
-//        }
-//        return context.getFacade ();
-        throw new UnsupportedOperationException ("todo");
+        if (servletContext == null) {
+            servletContext = new ServletContextImpl (this);
+        }
+        return servletContext;
     }
 
     @Override
@@ -851,6 +978,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             throw new IllegalArgumentException (e.getMessage ());
         }
     }
+
 
     @Override
     public boolean getXmlValidation() {
@@ -1154,17 +1282,15 @@ public final class StandardContext extends AbstractContainer implements Context 
     }
 
     @Override
-    public void addServletContainerInitializer(ServletContainerInitializer sci, Set<Class<?>> classes) {
-        throw new UnsupportedOperationException ();
-    }
-
-    @Override
     public boolean getPaused() {
         return paused;
     }
 
     public void setPaused(boolean paused) {
-        this.paused = paused;
+        synchronized (pausedLock) {
+            this.paused = paused;
+            pausedLock.notifyAll ();
+        }
     }
 
     @Override
@@ -1378,6 +1504,42 @@ public final class StandardContext extends AbstractContainer implements Context 
         Thread.currentThread ().setContextClassLoader (originalClassLoader);
     }
 
+    @Override
+    public Loader getLoader() {
+        Lock readLock = loaderLock.readLock ();
+        readLock.lock ();
+        try {
+            return loader;
+        } finally {
+            readLock.unlock ();
+        }
+    }
+
+    @Override
+    public void setLoader(Loader loader) {
+        Lock lock = loaderLock.writeLock ();
+        lock.lock ();
+        Loader oldLoader = null;
+        try {
+            //stop
+            oldLoader = this.loader;
+            if (this.loader instanceof Lifecycle) {
+                ((Lifecycle) this.loader).stop ();
+            }
+
+            this.loader = loader;
+            loader.setContext (this);
+            if (loader instanceof Lifecycle) {
+                ((Lifecycle) loader).start ();
+            }
+        } catch (LifecycleException e) {
+            log.error ("", e);
+        } finally {
+            lock.unlock ();
+        }
+        support.firePropertyChange ("loader", oldLoader, loader);
+    }
+
     /**
      * 抄的，验证url合法性
      */
@@ -1425,4 +1587,74 @@ public final class StandardContext extends AbstractContainer implements Context 
         }
     }
 
+    @Override
+    public void addServletContainerInitializer(
+            ServletContainerInitializer sci, Set<Class<?>> classes) {
+        initializers.put (sci, classes);
+    }
+
+
+    public boolean getUnpackWAR() {
+        return unpackWAR;
+    }
+
+    public void setUnpackWAR(boolean unpackWAR) {
+        this.unpackWAR = unpackWAR;
+    }
+
+    public void setUnloadDelay(long unloadDelay) {
+        long oldUnloadDelay = this.unloadDelay;
+        this.unloadDelay = unloadDelay;
+        support.firePropertyChange ("unloadDelay",
+                oldUnloadDelay,
+                this.unloadDelay);
+    }
+
+    @Override
+    public void incrementInProgressAsyncCount() {
+        inProgressAsyncCount.incrementAndGet ();
+    }
+
+    @Override
+    public void decrementInProgressAsyncCount() {
+        inProgressAsyncCount.decrementAndGet ();
+    }
+
+    public long getInProgressAsyncCount() {
+        return inProgressAsyncCount.get ();
+    }
+
+    /**
+     * @return the original document root for this Context.  This can be an absolute
+     * pathname, a relative pathname, or a URL.
+     * Is only set as deployment has change docRoot!
+     */
+    public String getOriginalDocBase() {
+        return this.originalDocBase;
+    }
+
+    /**
+     * Set the original document root for this Context.  This can be an absolute
+     * pathname, a relative pathname, or a URL.
+     *
+     * @param docBase The original document root
+     */
+    public void setOriginalDocBase(String docBase) {
+        this.originalDocBase = docBase;
+    }
+
+    @Override
+    public void invoke(Request request, Response response) throws IOException, ServletException {
+        synchronized (pausedLock) {
+            while (paused) {
+                try {
+                    pausedLock.wait ();
+                } catch (InterruptedException ignored) {
+
+                }
+            }
+        }
+
+        super.invoke (request, response);
+    }
 }

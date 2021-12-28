@@ -11,7 +11,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Objects;
 
 import static com.example.filter.Constants.SYSTEM_FILTER_PREFIX;
 

@@ -133,6 +133,7 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
 
     /**
      * 获得解码之后的uri，即url编码的字符串再解码的结果
+     * 是全写如http://ssss/sss/sss ??
      */
     @Override
     public String getDecodedRequestURI() {
@@ -245,6 +246,7 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
 
     /**
      * 不知道是啥
+     * 获得区分context的uri，比如/root？？
      */
     @Override
     public String getContextPath() {
@@ -319,6 +321,7 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
 
     /**
      * does not include query string parameters.
+     * 不包括请求参数的全写uri
      */
     @Override
     public StringBuffer getRequestURL() {

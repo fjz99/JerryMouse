@@ -1,6 +1,7 @@
 package com.example.connector;
 
 
+import com.example.Context;
 import com.example.connector.http.HttpConnector;
 
 import javax.servlet.Servlet;
@@ -52,7 +53,7 @@ public interface Response {
     /**
      * Return the Context with which this Response is associated.
      */
-//    Context getContext();
+    Context getContext();
 
 
     /**
@@ -61,7 +62,7 @@ public interface Response {
      *
      * @param context The associated Context
      */
-//    void setContext(Context context);
+    void setContext(Context context);
 
     /**
      * Application commit flag accessor.

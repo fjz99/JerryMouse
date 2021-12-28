@@ -1,5 +1,6 @@
 package com.example.valve.basic;
 
+import com.example.Context;
 import com.example.Wrapper;
 import com.example.connector.Request;
 import com.example.connector.Response;
@@ -30,15 +31,20 @@ public class StandardWrapperValve extends AbstractValve {
     @Override
     public void invoke(Request request, Response response) throws IOException, ServletException {
         Wrapper wrapper = (Wrapper) this.container;
+        Context context = (Context) container.getParent ();
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
 
 
-        //1.检查服务不可用的问题
-        //fixme 并没有检查context的不可用
+        //1.检查服务不可用的问题（比如启动失败等）
+        if (!context.isAvailable ()) {
+            //说明context启动失败
+            httpServletResponse.sendError (HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        //wrapper不可用可能是短暂的
         if (!wrapper.isUnavailable ()) {
             processUnavailable (httpServletResponse);
-//            isAvailable = false;
             return;
         }
 

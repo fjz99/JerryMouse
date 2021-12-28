@@ -1,5 +1,7 @@
 package com.example.connector;
 
+import com.example.Context;
+import com.example.Wrapper;
 import com.example.connector.http.HttpConnector;
 import com.example.connector.http.HttpRequestStream;
 
@@ -76,6 +78,8 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     protected Response response;
 
     protected Map<String, Object> notes = new ConcurrentHashMap<> ();
+    private Wrapper wrapper;
+    private Context context;
 
 //    protected ByteBuf byteBuf;
 
@@ -87,10 +91,6 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     @Override
     public void setConnector(HttpConnector httpConnector) {
         this.httpConnector = httpConnector;
-    }
-
-    public void setParameterMap(Map<String, String[]> parameterMap) {
-        this.parameterMap = parameterMap;
     }
 
     /**
@@ -123,6 +123,26 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     }
 
     @Override
+    public Context getContext() {
+        return context;
+    }
+
+    @Override
+    public void setContext(Context context) {
+        this.context = context;
+    }
+
+    @Override
+    public Wrapper getWrapper() {
+        return (this.wrapper);
+    }
+
+    @Override
+    public void setWrapper(Wrapper wrapper) {
+        this.wrapper = wrapper;
+    }
+
+    @Override
     public ServletInputStream createInputStream() {
         Objects.requireNonNull (inputStream);
         if (servletInputStream == null) {
@@ -131,11 +151,6 @@ public abstract class AbstractRequest implements Request, ServletRequest {
             throw new IllegalStateException ("servletInputStream exists");
         }
     }
-
-//    @Override
-//    public void setByteBuf(ByteBuf byteBuf) {
-//        this.byteBuf = byteBuf;
-//    }
 
     /**
      * 关闭所有的reader等,释放资源
@@ -163,6 +178,11 @@ public abstract class AbstractRequest implements Request, ServletRequest {
         }
 
     }
+
+//    @Override
+//    public void setByteBuf(ByteBuf byteBuf) {
+//        this.byteBuf = byteBuf;
+//    }
 
     /**
      * 暂时用不到，毕竟没有池化processor
@@ -314,6 +334,10 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     @Override
     public Map<String, String[]> getParameterMap() {
         return parameterMap;
+    }
+
+    public void setParameterMap(Map<String, String[]> parameterMap) {
+        this.parameterMap = parameterMap;
     }
 
     @Override

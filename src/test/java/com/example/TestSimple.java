@@ -11,6 +11,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 @Slf4j
 public class TestSimple {
+    private final Object lock = new Object ();
+
     @Test
     void test() {
 //        List<L> list = new ArrayList<> ();
@@ -40,6 +42,11 @@ public class TestSimple {
         Throwable e = new IllegalStateException ("fffff");
         e.printStackTrace ();
         log.error ("线程异常", e);
+    }
+
+    @Test
+    void testSync() throws InterruptedException {
+//        lock.notifyAll ();
     }
 
     interface L {

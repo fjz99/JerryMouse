@@ -413,4 +413,30 @@ public interface Container extends Lifecycle {
     File getCatalinaHome();
 
     void invoke(Request request, Response response) throws IOException, ServletException;
+
+    /**
+     * Return the child Container that should be used to process this Request,
+     * based upon its characteristics.  If no such child Container can be
+     * identified, return <code>null</code> instead.
+     *
+     * @param request Request being processed
+     * @param update  Update the Request to reflect the mapping selection?
+     */
+    Container map(Request request, boolean update);
+
+    /**
+     * Return the Mapper associated with the specified protocol, if there
+     * is one.  If there is only one defined Mapper, use it for all protocols.
+     * If there is no matching Mapper, return <code>null</code>.
+     *
+     * @param protocol Protocol for which to find a Mapper
+     */
+    Mapper findMapper(String protocol);
+
+
+    /**
+     * Return the set of Mappers associated with this Container.  If this
+     * Container has no Mappers, a zero-length array is returned.
+     */
+    Mapper[] findMappers();
 }

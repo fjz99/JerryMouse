@@ -1,5 +1,7 @@
 package com.example.core;
 
+import com.example.Context;
+
 import javax.servlet.*;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import java.io.InputStream;
@@ -14,6 +16,10 @@ import java.util.Set;
  * @date 2021/12/27 20:12
  */
 public class ServletContextImpl implements ServletContext {
+    public ServletContextImpl(Context standardContext) {
+
+    }
+
     @Override
     public String getContextPath() {
         return null;

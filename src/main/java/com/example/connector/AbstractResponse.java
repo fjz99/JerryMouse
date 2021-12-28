@@ -1,5 +1,6 @@
 package com.example.connector;
 
+import com.example.Context;
 import com.example.connector.http.HttpConnector;
 import com.example.connector.http.HttpResponseStream;
 import com.example.util.StringManager;
@@ -47,6 +48,7 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     protected boolean suspended;
     protected boolean err;
     protected PrintWriter writer;
+    private Context context;
 
     public void setByteBuf(ByteBuf byteBuf) {
         this.byteBuf = byteBuf;
@@ -75,6 +77,16 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     @Override
     public int getContentCount() {
         return byteBuf.readableBytes ();
+    }
+
+    @Override
+    public Context getContext() {
+        return context;
+    }
+
+    @Override
+    public void setContext(Context context) {
+        this.context = context;
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.example.connector;
 
 
+import com.example.Context;
+import com.example.Wrapper;
 import com.example.connector.http.HttpConnector;
 import io.netty.buffer.ByteBuf;
 
@@ -59,7 +61,7 @@ public interface Request {
     /**
      * Return the Context within which this Request is being processed.
      */
-//    Context getContext();
+    Context getContext();
 
 
     /**
@@ -70,7 +72,7 @@ public interface Request {
      *
      * @param context The newly associated Context
      */
-//    void setContext(Context context);
+    void setContext(Context context);
 
 
     /**
@@ -136,7 +138,7 @@ public interface Request {
     /**
      * Return the Wrapper within which this Request is being processed.
      */
-//    Wrapper getWrapper();
+    Wrapper getWrapper();
 
 
     /**
@@ -146,7 +148,7 @@ public interface Request {
      *
      * @param wrapper The newly associated Wrapper
      */
-//    void setWrapper(Wrapper wrapper);
+    void setWrapper(Wrapper wrapper);
 
 
     // --------------------------------------------------------- Public Methods

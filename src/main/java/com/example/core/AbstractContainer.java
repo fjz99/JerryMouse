@@ -14,10 +14,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,6 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class AbstractContainer extends LifecycleBase implements Container {
 
     protected final PropertyChangeSupport support = new PropertyChangeSupport (this);
+    /**
+     * The set of Mappers associated with this Container, keyed by protocol.
+     */
+    protected final Map<String, Mapper> mappers = new ConcurrentHashMap<> ();
     /**
      * name，唯一id，用在children上
      */
@@ -175,6 +176,24 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
             }
         }
         fireContainerEvent (ADD_CHILD_EVENT, child);
+    }
+
+    @Override
+    public Container map(Request request, boolean update) {
+        Mapper mapper = findMapper (request.getRequest ().getProtocol ());
+        return Optional.ofNullable (mapper)
+                .map (x -> x.map (request, update))
+                .orElse (null);
+    }
+
+    @Override
+    public Mapper findMapper(String protocol) {
+        return mappers.get (protocol);
+    }
+
+    @Override
+    public Mapper[] findMappers() {
+        return mappers.values ().toArray (new Mapper[0]);
     }
 
     @Override
