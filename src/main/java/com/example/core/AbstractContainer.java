@@ -125,7 +125,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
     }
 
     /**
-     * 命名有问题，本质就是获得classLoader而已
+     * 有啥用？？
      */
     @Override
     public ClassLoader getParentClassLoader() {
@@ -180,10 +180,48 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
 
     @Override
     public Container map(Request request, boolean update) {
-        Mapper mapper = findMapper (request.getRequest ().getProtocol ());
+        Mapper mapper = findMapper (request.getRequest ().getProtocol ().toLowerCase ());//lower case
         return Optional.ofNullable (mapper)
                 .map (x -> x.map (request, update))
                 .orElse (null);
+    }
+
+    protected void addDefaultMapper(String mapperClass) {
+        if (mapperClass == null) {
+            return;
+        }
+        if (mappers.size () >= 1)
+            return;
+
+        try {
+            Class<?> clazz = Class.forName (mapperClass);
+            Mapper mapper = (Mapper) clazz.newInstance ();
+            mapper.setProtocol ("http");
+            addMapper (mapper);
+            log.info ("{} 添加默认mapper {}", getName (), mapperClass);
+        } catch (Exception e) {
+            log.error ("containerBase.addDefaultMapper", e);
+        }
+    }
+
+    public void addMapper(Mapper mapper) {
+        synchronized (mappers) {
+            if (mappers.get (mapper.getProtocol ()) != null)
+                throw new IllegalArgumentException ("addMapper:  Protocol '" +
+                        mapper.getProtocol () +
+                        "' is not unique");
+            mapper.setContainer (this);      // May throw IAE
+            if (isRunning () && (mapper instanceof Lifecycle)) {
+                try {
+                    ((Lifecycle) mapper).start ();
+                } catch (LifecycleException e) {
+                    log.error ("ContainerBase.addMapper: start: ", e);
+                    throw new IllegalStateException ("ContainerBase.addMapper: start: " + e);
+                }
+            }
+            mappers.put (mapper.getProtocol (), mapper);
+            fireContainerEvent (ADD_MAPPER_EVENT, mapper);
+        }
     }
 
     @Override
@@ -236,8 +274,8 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
         if (remove != null) {
             try {
                 remove.stop ();
-            } catch (LifecycleException e) {
-                e.printStackTrace ();
+            } catch (LifecycleException ignored) {
+                //忽略，因为children可能根本没有启动
             }
         }
 

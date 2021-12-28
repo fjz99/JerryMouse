@@ -39,7 +39,8 @@ public class StandardContextValve extends AbstractValve {
          * 但是也要保护web-inf和meta-inf文件夹不被静态访问
          * Context path就是httpxxx的前缀，而requri是http请求uri全写，relative url就是/xx/xx/xx的相对路径
          */
-        String contextPath = hreq.getContextPath ();
+//        String contextPath = hreq.getContextPath ();
+        String contextPath = ((Context) getContainer ()).getPath ();
         String requestURI = ((HttpRequest) request).getDecodedRequestURI ();
         String relativeURI = requestURI.substring (contextPath.length ()).toUpperCase ();
         if (relativeURI.equals ("/META-INF") ||

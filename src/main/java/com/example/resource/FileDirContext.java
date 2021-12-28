@@ -86,7 +86,6 @@ public final class FileDirContext extends AbstractContext {
         return result;
     }
 
-
     public ResourceAttributes getAttributes(String name) {
         File file = file (name);
 
@@ -128,6 +127,10 @@ public final class FileDirContext extends AbstractContext {
         return list;
     }
 
+    public File getFile() {
+        return new File (base.getAbsolutePath ());
+    }
+
     /**
      * 删除了源码中的很多内容
      * Return a File object representing the specified normalized
@@ -145,6 +148,13 @@ public final class FileDirContext extends AbstractContext {
             return null;
         }
 
+    }
+
+    @Override
+    public String toString() {
+        return "FileDirContext{" +
+                "base=" + base.getPath () +
+                '}';
     }
 
     public static class FileResource extends Resource {

@@ -24,4 +24,14 @@ class FileDirContextTest {
         System.out.println (lookup);
         System.out.println (fileDirContext.getAttributes ("abc.txt"));
     }
+
+    @Test
+    void list() {
+        FileDirContext fileDirContext = new FileDirContext ();
+        System.out.println (System.getProperty ("user.dir"));
+        fileDirContext.setDocBase ("webapps/testFileDirContext");
+        for (Object o : fileDirContext.list ("/")) {
+            System.out.println (o);
+        }
+    }
 }

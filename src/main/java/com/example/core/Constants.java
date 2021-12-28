@@ -10,6 +10,14 @@ public final class Constants {
      * 系统的预制的filter不应该用webapp class loader加载
      */
     public static final String SYSTEM_PREFIX;
+    public static final String Package = "com.example.core";
+    public static final String SERVER_INFO = "JerryMouse/0.1.alpha by fjz";
+
+    /**
+     * 实现的servlet的版本号
+     */
+    public static final int MAJOR_VERSION = 2;
+    public static final int MINOR_VERSION = 3;
 
     static {
         String name = FilterConfigImpl.class.getCanonicalName ();

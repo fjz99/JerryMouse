@@ -174,7 +174,7 @@ public final class StandardWrapper extends AbstractContainer implements Wrapper,
         }
 
         //loader
-        ClassLoader classLoader = getParentClassLoader ();
+        ClassLoader classLoader = getLoader ().getClassLoader ();
         if (isSystem (servletClass)) {
             classLoader = getClass ().getClassLoader ();
         }

@@ -56,5 +56,11 @@ public class ResourceEntry {
 //    public Certificate[] certificates = null;
 
 
+    @Override
+    public String toString() {
+        return "ResourceEntry{" +
+                "source=" + source +
+                '}';
+    }
 }
 

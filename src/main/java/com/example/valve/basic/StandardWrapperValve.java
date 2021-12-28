@@ -43,7 +43,7 @@ public class StandardWrapperValve extends AbstractValve {
             return;
         }
         //wrapper不可用可能是短暂的
-        if (!wrapper.isUnavailable ()) {
+        if (wrapper.isUnavailable ()) {
             processUnavailable (httpServletResponse);
             return;
         }
@@ -123,7 +123,7 @@ public class StandardWrapperValve extends AbstractValve {
         }
     }
 
-    private void sendException(HttpServletResponse httpServletResponse, Throwable e) throws IOException {
+    private void sendException(HttpServletResponse httpServletResponse, Throwable e) {
         httpServletResponse.setStatus (HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 

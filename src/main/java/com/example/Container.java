@@ -66,6 +66,11 @@ public interface Container extends Lifecycle {
 
     // ----------------------------------------------------- Manifest Constants
 
+    /**
+     * The ContainerEvent event type sent when a Mapper is added
+     * by <code>addMapper()</code>.
+     */
+    String ADD_MAPPER_EVENT = "addMapper";
 
     /**
      * The ContainerEvent event type sent when a child container is added
@@ -439,4 +444,13 @@ public interface Container extends Lifecycle {
      * Container has no Mappers, a zero-length array is returned.
      */
     Mapper[] findMappers();
+
+    /**
+     * Add the specified Mapper associated with this Container.
+     *
+     * @param mapper The corresponding Mapper implementation
+     * @throws IllegalArgumentException if this exception is thrown by
+     *                                  the <code>setContainer()</code> method of the Mapper
+     */
+    void addMapper(Mapper mapper);
 }

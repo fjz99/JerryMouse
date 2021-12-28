@@ -1268,4 +1268,53 @@ public interface Context extends Container, ContextBind {
     void incrementInProgressAsyncCount();
 
     void decrementInProgressAsyncCount();
+
+    /**
+     * Remove the MIME mapping for the specified extension, if it exists;
+     * otherwise, no action is taken.
+     *
+     * @param extension Extension to remove the mapping for
+     */
+    void removeMimeMapping(String extension);
+
+    /**
+     * @return the MIME type to which the specified extension is mapped,
+     * if any; otherwise return <code>null</code>.
+     *
+     * @param extension Extension to map to a MIME type
+     */
+    String findMimeMapping(String extension);
+
+
+    /**
+     * @return the extensions for which MIME mappings are defined.  If there
+     * are none, a zero-length array is returned.
+     */
+    String[] findMimeMappings();
+
+    /**
+     * Add a new MIME mapping, replacing any existing mapping for
+     * the specified extension.
+     *
+     * @param extension Filename extension being mapped
+     * @param mimeType Corresponding MIME type
+     */
+    void addMimeMapping(String extension, String mimeType);
+
+    /**
+     * Return the "use cookies for session ids" flag.
+     *
+     * @return <code>true</code> if it is permitted to use cookies to track
+     *         session IDs for this web application, otherwise
+     *         <code>false</code>
+     */
+    boolean isCookies();
+
+
+    /**
+     * Set the "use cookies for session ids" flag.
+     *
+     * @param cookies The new flag
+     */
+    void setCookies(boolean cookies);
 }

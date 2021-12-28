@@ -229,4 +229,8 @@ public interface Manager {
      * a method that executes periodic tasks, such as expiring sessions etc.
      */
     void backgroundProcess();
+
+    int getSessionMaxAliveTime();
+
+    void setSessionMaxAliveTime(int sessionMaxAliveTime);
 }

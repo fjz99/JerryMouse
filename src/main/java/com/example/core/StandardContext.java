@@ -18,6 +18,7 @@ import com.example.resource.FileDirContext;
 import com.example.session.Manager;
 import com.example.session.StandardManager;
 import com.example.util.URLEncoder;
+import com.example.valve.basic.StandardContextValve;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.*;
@@ -47,6 +48,7 @@ import static com.example.life.EventType.*;
 public final class StandardContext extends AbstractContainer implements Context {
 
 
+    private static final String mapperClass = "com.example.mapper.StandardContextMapper";
     private final ReadWriteLock managerLock = new ReentrantReadWriteLock ();
     private final Map<String, FilterConfigImpl> filterConfigs = new ConcurrentHashMap<> ();
     private final List<FilterMapping> filterMappings = new ArrayList<> ();
@@ -72,6 +74,11 @@ public final class StandardContext extends AbstractContainer implements Context 
      * matching pattern.
      */
     private final Map<String, String> servletMappings = new ConcurrentHashMap<> ();
+    /**
+     * The MIME mappings for this web application, keyed by extension.
+     * 即扩展名对应的文件类型（content-type）,比如gif对应image/gif类型
+     */
+    private final Map<String, String> mimeMappings = new ConcurrentHashMap<> ();
     /**
      * The watched resources for this application.
      */
@@ -105,6 +112,11 @@ public final class StandardContext extends AbstractContainer implements Context 
     private final AtomicLong inProgressAsyncCount = new AtomicLong (0);
     private Manager manager = null;
     /**
+     * Should we attempt to use cookies for session id communication?
+     * 标志位，决定是用cookie还是URL
+     */
+    private boolean cookies = true;
+    /**
      * The ServletContext implementation associated with this Context.
      */
     private ServletContextImpl servletContext = null;
@@ -130,6 +142,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     private String encodedPath = null;
     /**
      * Unencoded path for this web application.
+     * 比如/xxx,表示具体的context前缀
      */
     private String path = null;
     /**
@@ -225,6 +238,40 @@ public final class StandardContext extends AbstractContainer implements Context 
     private String defaultWebXml;
     private boolean webXmlValidation = true;
 
+    public StandardContext() {
+        getPipeline ().setBasic (new StandardContextValve ());
+    }
+
+    public boolean isCookies() {
+        return cookies;
+    }
+
+    public void setCookies(boolean cookies) {
+        this.cookies = cookies;
+    }
+
+    @Override
+    public void addMimeMapping(String extension, String mimeType) {
+        mimeMappings.put (extension.toLowerCase (Locale.ENGLISH), mimeType);
+        fireContainerEvent ("addMimeMapping", extension);
+    }
+
+    @Override
+    public String findMimeMapping(String extension) {
+        return mimeMappings.get (extension);
+    }
+
+    @Override
+    public String[] findMimeMappings() {
+        return mimeMappings.keySet ().toArray (new String[0]);
+    }
+
+    @Override
+    public void removeMimeMapping(String extension) {
+        mimeMappings.remove (extension);
+        fireContainerEvent ("removeMimeMapping", extension);
+    }
+
     public String getDefaultWebXml() {
         return defaultWebXml;
     }
@@ -267,7 +314,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
         }
         if (getInProgressAsyncCount () == 0) {
-            log.info ("All request(s) stopped.");
+            log.info ("All request(s) has stopped.");
         } else {
             log.warn ("{} reqs hasn't sopped yet.", getInProgressAsyncCount ());
         }
@@ -328,7 +375,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         initializers.clear ();
 
-        log.debug ("reset context {}", getDisplayName ());
+        log.debug ("Reset context {}.", getDisplayName ());
     }
 
     /**
@@ -370,7 +417,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         verifyStopped ();
         fireLifecycleEvent (BEFORE_START_EVENT, this);
 
-        log.debug ("starting {}", getDisplayName ());
+        log.debug ("Starting context {}", getDisplayName ());
         running = true;
         setConfigured (false);//后面会通过监听器设置为true
         setAvailable (false);
@@ -393,7 +440,8 @@ public final class StandardContext extends AbstractContainer implements Context 
         log.debug ("Processing standard container startup");
         ClassLoader bind = bind (null);
         try {
-            if (getLoader () instanceof Lifecycle) {
+            if (getLoader () instanceof Lifecycle &&
+                    !(((Lifecycle) getLoader ()).isRunning ())) {
                 ((Lifecycle) getLoader ()).start ();
             }
             unbind (bind);
@@ -409,12 +457,16 @@ public final class StandardContext extends AbstractContainer implements Context 
                 ((Lifecycle) pipeline).start ();
             }
 
+            addDefaultMapper (mapperClass);
+            fireLifecycleEvent (START_EVENT, this);
+
             //启动完所有的子组件，就开始检查
             //configured会被监听器设置，所以启动所有的子组件之后，如果configure是false的话，那就启动失败了
-            if (!getConfigured ())
+            if (!getConfigured ()) {
                 ok = false;
+                log.error ("configure = false, Context {} starts failed.", getDisplayName ());
+            }
 
-            fireLifecycleEvent (START_EVENT, this);
             if (getManager () == null) {
                 setManager (new StandardManager ());//set的时候会start
             }
@@ -483,7 +535,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     private void postWorkDirectory() {
         //默认的
         String workDir = getWorkDir ();
-        if (workDir == null || workDir.length () == 0) {
+        if (workDir == null) {
 
             // Retrieve our parent (normally a host) name
             String hostName = null;
@@ -500,22 +552,18 @@ public final class StandardContext extends AbstractContainer implements Context 
                     engineName = parentEngine.getName ();
                 }
             }
-            if ((hostName == null) || (hostName.length () < 1)) {
+            if ((hostName == null) || (hostName.length () < 1))
                 hostName = "_";
-            }
-            if ((engineName == null) || (engineName.length () < 1)) {
+            if ((engineName == null) || (engineName.length () < 1))
                 engineName = "_";
-            }
 
-            String temp = getBaseName ();
-            if (temp.startsWith ("/")) {
+            String temp = getPath ();
+            if (temp.startsWith ("/"))
                 temp = temp.substring (1);
-            }
             temp = temp.replace ('/', '_');
             temp = temp.replace ('\\', '_');
-            if (temp.length () < 1) {
-                temp = "ROOT";
-            }
+            if (temp.length () < 1)
+                temp = "_";
             if (hostWorkDir != null) {
                 workDir = hostWorkDir + File.separator + temp;
             } else {
@@ -525,26 +573,27 @@ public final class StandardContext extends AbstractContainer implements Context 
             setWorkDir (workDir);
         }
 
-        File work = new File (getWorkDir ());
-        if (!work.isAbsolute ()) {
-            //相对路径
+        // Create this directory if necessary
+        File dir = new File (workDir);
+        if (!dir.isAbsolute ()) {
+            String property = System.getProperty ("catalina.base");
+            if (property == null) {
+                property = "E:/TestContext/";
+                log.warn ("catalina.base == null, fallback to {}", property);
+            }
+            File catalinaHome = new File (property);
+            String catalinaHomePath;
             try {
-                String path = getCatalinaBase ().getCanonicalPath ();
-                work = new File (path, getDocBase ());
-            } catch (IOException e) {
-                log.warn ("", e);
+                catalinaHomePath = catalinaHome.getCanonicalPath ();
+                dir = new File (catalinaHomePath, workDir);
+            } catch (IOException ignored) {
             }
         }
+        dir.mkdirs ();
+        log.info ("Context {} 创建工作目录 {}", getDisplayName (), dir.getAbsolutePath ());
 
-        if (servletContext == null) {
-            getServletContext ();
-        }
-
-        if (!work.mkdirs () && !work.isDirectory ()) {
-            log.warn ("创建work dir {} failed.", getWorkDir ());
-        }
-
-        servletContext.setAttribute (ServletContext.TEMPDIR, work);//!!!!!!!!temp dir 就是 work dir。。
+        // Set the appropriate servlet context attribute
+        getServletContext ().setAttribute (ServletContext.TEMPDIR, dir);//!!!temp dir 就是workdir
     }
 
     /**
@@ -563,7 +612,7 @@ public final class StandardContext extends AbstractContainer implements Context 
                 }
             }
         }
-        log.debug ("context {} filter started.", getDisplayName ());
+        log.debug ("Context {} filter started.", getDisplayName ());
         return true;
     }
 
@@ -582,7 +631,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
             filterConfigs.clear ();
         }
-        log.debug ("context {} filter stopped.", getDisplayName ());
+        log.debug ("Context {} filters stopped.", getDisplayName ());
         return false;
     }
 
@@ -631,7 +680,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         setApplicationEventListeners (event.toArray ());
         setApplicationLifecycleListeners (lifecycle.toArray ());
-        log.debug ("{} Listeners started.", getDisplayName ());
+        log.debug ("Context {} Listeners started.", getDisplayName ());
         return true;
     }
 
@@ -653,7 +702,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         setApplicationEventListeners (null);
         setApplicationLifecycleListeners (null);
-        log.debug ("{} Listeners stopped.", getDisplayName ());
+        log.debug ("Context {} Listeners stopped.", getDisplayName ());
         return true;
     }
 
@@ -910,6 +959,10 @@ public final class StandardContext extends AbstractContainer implements Context 
         return reloadable;
     }
 
+    /**
+     * Loader会添加监听器，这样就可以保证context的修改反馈到context中
+     * 但是不要给Loader添加Context的监听器，否则会死循环，会OOM
+     */
     @Override
     public void setReloadable(boolean reloadable) {
         boolean oldReloadable = this.reloadable;
@@ -955,6 +1008,9 @@ public final class StandardContext extends AbstractContainer implements Context 
          * behaviour of sessions is never to time out.
          */
         this.sessionTimeout = (timeout == 0) ? -1 : timeout;
+        if (getManager () != null) {
+            getManager ().setSessionMaxAliveTime (timeout);//只会影响新的session
+        }
         support.firePropertyChange ("sessionTimeout",
                 oldSessionTimeout,
                 this.sessionTimeout);
@@ -1278,7 +1334,29 @@ public final class StandardContext extends AbstractContainer implements Context 
 
     @Override
     public String getRealPath(String path) {
-        return getServletContext ().getRealPath (path);
+        // The WebResources API expects all paths to start with /. This is a
+        // special case for consistency with earlier Tomcat versions.
+        if ("".equals (path)) {
+            path = "/";
+        }
+        if (resources != null) {
+            try {
+                FileDirContext.FileResource lookup = ((FileDirContext.FileResource) resources.lookup (path));
+                File resource = lookup.getFile ();
+                String canonicalPath = resource.getCanonicalPath ();
+                if ((resource.isDirectory () && !canonicalPath.endsWith (File.separator) ||
+                        !resource.exists ()) && path.endsWith ("/")) {
+                    return canonicalPath + File.separatorChar;
+                } else {
+                    return canonicalPath;
+                }
+            } catch (IllegalArgumentException iae) {
+                // ServletContext.getRealPath() does not allow this to be thrown
+            } catch (IOException e) {
+                log.error ("", e);
+            }
+        }
+        return null;
     }
 
     @Override
@@ -1657,4 +1735,5 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         super.invoke (request, response);
     }
+
 }

@@ -1,38 +1,78 @@
 package com.example.core;
 
+import com.example.Container;
 import com.example.Context;
+import com.example.Host;
+import com.example.Wrapper;
+import com.example.resource.FileDirContext;
+import javafx.print.Collation;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.*;
 import javax.servlet.descriptor.JspConfigDescriptor;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Enumeration;
-import java.util.EventListener;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.example.connector.http.Constants.SERVER_INFO;
 
 /**
  * @date 2021/12/27 20:12
  */
+@Slf4j
 public class ServletContextImpl implements ServletContext {
-    public ServletContextImpl(Context standardContext) {
 
+    private final Map<String, String> paramMap = new ConcurrentHashMap<> ();
+    private final Map<String, Object> attributes = new ConcurrentHashMap<> ();
+    private final StandardContext context;
+
+    /**
+     * 如何获得sessionId，是基于url，还是cookie，还是SSL（未实现）
+     */
+    private Set<SessionTrackingMode> sessionTrackingModes = null;
+    private Set<SessionTrackingMode> defaultSessionTrackingModes = null;
+    private Set<SessionTrackingMode> supportedSessionTrackingModes = null;
+
+    public ServletContextImpl(StandardContext standardContext) {
+        super ();
+        this.context = standardContext;
+
+        setSessionTrackingModes ();
     }
 
     @Override
     public String getContextPath() {
-        return null;
+        return context.getPath ();
     }
 
+    /**
+     * 根据url获得ServletContext，一般都是获得当前的ServletContext
+     * 不支持cross context
+     */
     @Override
-    public ServletContext getContext(String uripath) {
+    public ServletContext getContext(String uri) {
+        // Validate the format of the specified argument
+        if ((uri == null) || (!uri.startsWith ("/")))
+            return (null);
+
+        // Return the current context if requested
+        String contextPath = context.getPath ();
+        if (!contextPath.endsWith ("/"))
+            contextPath = contextPath + "/";
+        if (uri.startsWith (contextPath)) {
+            return (this);
+        }
+
         return null;
     }
 
     @Override
     public int getMajorVersion() {
-        return 0;
+        return 4;
     }
 
     @Override
@@ -40,278 +80,441 @@ public class ServletContextImpl implements ServletContext {
         return 0;
     }
 
+    /**
+     * 获得支持的servlet的版本号
+     * 暂时不清楚和{@link #getMajorVersion}的区别
+     */
     @Override
     public int getEffectiveMajorVersion() {
-        return 0;
+        return Constants.MAJOR_VERSION;
     }
 
     @Override
     public int getEffectiveMinorVersion() {
-        return 0;
+        return Constants.MINOR_VERSION;
     }
 
+    /**
+     * 获得数据类型；
+     * 即扩展名对应的文件类型（content-type）,比如gif对应image/gif类型
+     */
     @Override
     public String getMimeType(String file) {
         return null;
     }
 
+    /**
+     * 获得路径下的所有资源，借助{@link com.example.resource.FileDirContext}
+     * FIXME 改为相对路径
+     */
     @Override
     public Set<String> getResourcePaths(String path) {
-        return null;
+        Set<String> set = new HashSet<> ();
+
+        for (Object o : context.getResources ().list (path)) {
+            if (o instanceof FileDirContext) {
+                set.add (((FileDirContext) o).getFile ().getPath ());
+            } else {
+                set.add (((FileDirContext.FileResource) o).getFile ().getPath ());
+            }
+        }
+        return set;
     }
 
+    /**
+     * 获得路径URL资源
+     */
     @Override
     public URL getResource(String path) throws MalformedURLException {
-        return null;
+        Object lookup = context.getResources ().lookup (path);
+        if (lookup instanceof FileDirContext.FileResource) {
+            return ((FileDirContext.FileResource) lookup).getFile ().toURL ();
+        } else {
+            return ((FileDirContext) lookup).getFile ().toURL ();
+        }
     }
 
+    /**
+     * 基于{@link com.example.resource.FileDirContext}
+     */
     @Override
     public InputStream getResourceAsStream(String path) {
+        Object lookup = context.getResources ().lookup (path);
+        if (lookup instanceof FileDirContext.FileResource) {
+            try {
+                return ((FileDirContext.FileResource) lookup).streamContent ();
+            } catch (IOException e) {
+                log.error ("", e);
+            }
+        }
         return null;
     }
 
+    /**
+     * Return a <code>RequestDispatcher</code> instance that acts as a
+     * wrapper for the resource at the given path.  The path must begin
+     * with a "/" and is interpreted as relative to the current context root.
+     * 获得基于/xx相对路径的RequestDispatcher
+     * TODO
+     */
     @Override
     public RequestDispatcher getRequestDispatcher(String path) {
-        return null;
+        throw new UnsupportedOperationException ("TODO");
     }
 
+    /**
+     * 这个指的是规定好了目标servlet的dispatcher，因为dispatcher一般用于forward
+     * TODO
+     */
     @Override
     public RequestDispatcher getNamedDispatcher(String name) {
-        return null;
+        throw new UnsupportedOperationException ("TODO");
     }
 
+    /**
+     * 根据文档，应该返回null
+     */
     @Override
+    @Deprecated
     public Servlet getServlet(String name) throws ServletException {
         return null;
     }
 
+    /**
+     * 根据文档，应该返回空
+     */
     @Override
+    @Deprecated
     public Enumeration<Servlet> getServlets() {
-        return null;
+        return Collections.emptyEnumeration ();
     }
 
+    /**
+     * 根据文档，应该返回空
+     */
     @Override
+    @Deprecated
     public Enumeration<String> getServletNames() {
-        return null;
+        return Collections.emptyEnumeration ();
     }
 
+    /**
+     * 具体使用的logger在log4j.xml中配置
+     */
     @Override
     public void log(String msg) {
-
+        log.info (msg);
     }
 
     @Override
     public void log(Exception exception, String msg) {
-
+        log (msg, exception);
     }
 
     @Override
     public void log(String message, Throwable throwable) {
-
+        log.error (message, throwable);
     }
 
+    /**
+     * {@inheritDoc}
+     * 即把相对路径翻译成绝对路径，带http的那种
+     */
     @Override
     public String getRealPath(String path) {
-        return null;
+        return context.getRealPath (path);
     }
 
     @Override
     public String getServerInfo() {
-        return null;
+        return SERVER_INFO;
     }
 
     @Override
     public String getInitParameter(String name) {
-        return null;
+        return paramMap.get (name);
     }
 
     @Override
     public Enumeration<String> getInitParameterNames() {
-        return null;
+        return Collections.enumeration (new HashSet<> (paramMap.keySet ()));
     }
 
     @Override
     public boolean setInitParameter(String name, String value) {
-        return false;
+        Objects.requireNonNull (name);
+        return paramMap.putIfAbsent (name, value) == null;
+    }
+
+    private void mergeParam() {
+        paramMap.clear ();
+
+        for (String parameter : context.findParameters ()) {
+            paramMap.put (parameter, context.findParameter (parameter));
+        }
     }
 
     @Override
     public Object getAttribute(String name) {
-        return null;
+        return attributes.get (name);
     }
 
     @Override
     public Enumeration<String> getAttributeNames() {
-        return null;
+        return Collections.enumeration (new HashSet<> (attributes.keySet ()));
     }
 
+    /**
+     * 关键在于触发{@link ServletContextAttributeListener}监听器
+     */
     @Override
     public void setAttribute(String name, Object object) {
+        Objects.requireNonNull (name);
 
+        if (object == null) {
+            removeAttribute (name);
+            return;
+        }
+
+        boolean replaced = attributes.containsKey (name);
+        if (replaced) {
+            for (Object o : context.getApplicationEventListeners ()) {
+                if (o instanceof ServletContextAttributeListener) {
+                    try {
+                        ServletContextAttributeEvent event = new ServletContextAttributeEvent (this, name, attributes.get (name));
+                        ((ServletContextAttributeListener) o).attributeRemoved (event);
+                    } catch (Throwable e) {
+                        log.error ("", e);
+                    }
+                }
+            }
+        }
+
+        attributes.put (name, object);
+        for (Object o : context.getApplicationEventListeners ()) {
+            if (o instanceof ServletContextAttributeListener) {
+
+                try {
+                    if (replaced) {
+                        ServletContextAttributeEvent event = new ServletContextAttributeEvent (this, name, attributes.get (name));
+                        ((ServletContextAttributeListener) o).attributeAdded (event);
+                    } else {
+                        ServletContextAttributeEvent event = new ServletContextAttributeEvent (this, name, object);
+                        ((ServletContextAttributeListener) o).attributeReplaced (event);
+                    }
+                } catch (Throwable e) {
+                    log.error ("", e);
+                }
+            }
+        }
     }
 
+    /**
+     * 关键在于触发{@link ServletContextAttributeListener}监听器
+     */
     @Override
     public void removeAttribute(String name) {
+        Object remove = attributes.remove (name);
 
+        if (remove != null) {
+            for (Object o : context.getApplicationEventListeners ()) {
+                if (o instanceof ServletContextAttributeListener) {
+                    try {
+                        ServletContextAttributeEvent event = new ServletContextAttributeEvent (this, name, remove);
+                        ((ServletContextAttributeListener) o).attributeRemoved (event);
+                    } catch (Throwable e) {
+                        log.error ("", e);
+                    }
+                }
+            }
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String getServletContextName() {
-        return null;
+        return context.getDisplayName ();
     }
 
     @Override
     public ServletRegistration.Dynamic addServlet(String servletName, String className) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
-    public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException {
-        return null;
+    public <T extends Servlet> T createServlet(Class<T> clazz) {
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public ServletRegistration getServletRegistration(String servletName) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public Map<String, ? extends ServletRegistration> getServletRegistrations() {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public FilterRegistration.Dynamic addFilter(String filterName, String className) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public FilterRegistration.Dynamic addFilter(String filterName, Filter filter) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
-    public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException {
-        return null;
+    public <T extends Filter> T createFilter(Class<T> clazz) {
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public FilterRegistration getFilterRegistration(String filterName) {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
+    /**
+     * TODO
+     */
     @Override
     public SessionCookieConfig getSessionCookieConfig() {
-        return null;
+        throw new UnsupportedOperationException ("TODO");
     }
 
     @Override
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes) {
+        for (SessionTrackingMode sessionTrackingMode : sessionTrackingModes) {
+            if (!supportedSessionTrackingModes.contains (sessionTrackingMode)) {
+                throw new IllegalArgumentException ();
+            }
+        }
 
+        this.sessionTrackingModes = sessionTrackingModes;
     }
 
     @Override
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes() {
-        return null;
+        return defaultSessionTrackingModes;
     }
 
     @Override
     public Set<SessionTrackingMode> getEffectiveSessionTrackingModes() {
-        return null;
+        return sessionTrackingModes == null ? defaultSessionTrackingModes : sessionTrackingModes;
     }
 
     @Override
     public void addListener(String className) {
-
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public <T extends EventListener> void addListener(T t) {
-
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public void addListener(Class<? extends EventListener> listenerClass) {
-
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public JspConfigDescriptor getJspConfigDescriptor() {
-        return null;
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public ClassLoader getClassLoader() {
-        return null;
+        return context.getLoader ().getClassLoader ();
     }
 
+    /**
+     * 没有实现
+     */
     @Override
     public void declareRoles(String... roleNames) {
-
+        throw new UnsupportedOperationException ();
     }
 
     @Override
     public String getVirtualServerName() {
-        return null;
+        // Constructor will fail if context or its parent is null
+        Container host = context.getParent ();
+        Container engine = host.getParent ();
+        return engine.getName () + "/" + host.getName ();
     }
 
     @Override
     public int getSessionTimeout() {
-        return 0;
+        return context.getSessionTimeout ();
     }
 
     @Override
     public void setSessionTimeout(int sessionTimeout) {
-
+        context.setSessionTimeout (sessionTimeout);
     }
 
     @Override
     public String getRequestCharacterEncoding() {
-        return null;
+        return context.getRequestCharacterEncoding ();
     }
 
     @Override
     public void setRequestCharacterEncoding(String encoding) {
-
+        context.setRequestCharacterEncoding (encoding);
     }
 
     @Override
     public String getResponseCharacterEncoding() {
-        return null;
+        return context.getResponseCharacterEncoding ();
     }
 
     @Override
     public void setResponseCharacterEncoding(String encoding) {
+        context.setResponseCharacterEncoding (encoding);
+    }
 
+    private void setSessionTrackingModes() {
+        defaultSessionTrackingModes = EnumSet.of (SessionTrackingMode.URL);
+        supportedSessionTrackingModes = EnumSet.of (SessionTrackingMode.URL);
+
+        if (context.isCookies ()) {
+            defaultSessionTrackingModes.add (SessionTrackingMode.COOKIE);
+            supportedSessionTrackingModes.add (SessionTrackingMode.COOKIE);
+        }
     }
 }

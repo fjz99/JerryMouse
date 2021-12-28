@@ -22,7 +22,7 @@ import java.util.List;
  */
 @Slf4j
 public class HttpConnector extends LifecycleBase implements Connector {
-    private final int port = 8080;
+    private int port = 8080;
     private final String info = "com.example.connector.http.HttpConnector：一个 http connector";
     private final List<HttpProcessor> runningProcessors = new ArrayList<> ();
     private Container container;
@@ -30,6 +30,10 @@ public class HttpConnector extends LifecycleBase implements Connector {
     private boolean secure = false;
     private ChannelFuture future;
     private NioEventLoopGroup group;
+
+    public void setPort(int port) {
+        this.port = port;
+    }
 
     public Container getContainer() {
         return container;

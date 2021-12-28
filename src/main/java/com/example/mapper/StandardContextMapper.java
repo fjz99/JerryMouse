@@ -92,8 +92,7 @@ public final class StandardContextMapper implements Mapper {
             return (request.getWrapper ());
 
         // Identify the context-relative URI to be mapped
-        String contextPath =
-                ((HttpServletRequest) request.getRequest ()).getContextPath ();
+        String contextPath = context.getPath ();
         String requestURI = ((HttpRequest) request).getDecodedRequestURI ();
         String relativeURI = requestURI.substring (contextPath.length ());
 
@@ -108,7 +107,7 @@ public final class StandardContextMapper implements Mapper {
         String name = null;
 
         // Rule 1 -- Exact Match
-        log.debug ("Trying exact match");
+        log.trace ("Trying exact match");
         if (!(relativeURI.equals ("/")))
             name = context.findServletMapping (relativeURI);
         if (name != null)
@@ -119,7 +118,7 @@ public final class StandardContextMapper implements Mapper {
 
         // Rule 2 -- Prefix Match
         if (wrapper == null) {
-            log.debug ("  Trying prefix match");
+            log.trace ("Trying prefix match");
             servletPath = relativeURI;
             while (true) {
                 name = context.findServletMapping (servletPath + "/*");
@@ -140,7 +139,7 @@ public final class StandardContextMapper implements Mapper {
 
         // Rule 3 -- Extension Match
         if (wrapper == null) {
-            log.debug ("  Trying extension match");
+            log.trace ("Trying extension match");
             int slash = relativeURI.lastIndexOf ('/');
             if (slash >= 0) {
                 String last = relativeURI.substring (slash);
@@ -159,7 +158,7 @@ public final class StandardContextMapper implements Mapper {
 
         // Rule 4 -- Default Match
         if (wrapper == null) {
-            log.debug ("  Trying default match");
+            log.trace ("Trying default match");
             name = context.findServletMapping ("/");
             if (name != null)
                 wrapper = (Wrapper) context.findChild (name);
@@ -170,7 +169,7 @@ public final class StandardContextMapper implements Mapper {
 
         // Update the Request (if requested) and return this Wrapper
         if (wrapper != null)
-            log.debug (" Mapped to servlet '" + wrapper.getName () +
+            log.debug ("Mapped to servlet '" + wrapper.getName () +
                     "' with servlet path '" + servletPath +
                     "' and path info '" + pathInfo +
                     "' and update=" + update);

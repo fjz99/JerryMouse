@@ -375,8 +375,8 @@ public final class HttpProcessor extends LifecycleBase {
 
         handlerContext.writeAndFlush (fullHttpResponse);
 
-        log.info ("发送响应结束,status={}", response.getStatus ());
-        log.debug ("响应headers = {}", response.headers);
+        log.info ("发送响应结束,status={},响应headers = {}",
+                response.getStatus (), response.headers);
     }
 
     private void parseCookieToHeader(HttpHeaders respHeaders) {

@@ -286,7 +286,7 @@ public class WebappClassLoader
         jarRepositories.put (name, jarRepository);
 
         //todo 验证jar包中是否含有黑名单的类
-        log.info ("添加jar {}", file.getPath ());
+        log.info ("添加jar {}", file.getAbsolutePath ());
     }
 
     /**
@@ -309,7 +309,7 @@ public class WebappClassLoader
 
         Object lookup = resourceContext.lookup (repository);
         if (!(lookup instanceof FileDirContext)) {
-            throw new IllegalArgumentException ("必须是文件夹");
+            throw new IllegalArgumentException ("查找" + repository + "的结果必须是文件夹，而不是" + lookup);
         }
 
         File docBase = new File (((FileDirContext) lookup).getDocBase ());
@@ -575,7 +575,7 @@ public class WebappClassLoader
 
     @Override
     public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        log.info ("类加载 {}", name);
+        log.debug ("类加载 {}", name);
         //判断缓存是否存在
         Class<?> clazz = findLoadedClass0 (name);
         if (clazz != null) {
