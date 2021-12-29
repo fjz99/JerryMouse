@@ -407,6 +407,18 @@ public final class StandardContext extends AbstractContainer implements Context 
         }
     }
 
+    @Override
+    public String toString() {
+        return "StandardContext[" +
+                "'" + displayName + '\'' +
+                ']';
+    }
+
+    @Override
+    public String getName() {
+        return getDisplayName ();
+    }
+
     /**
      * 先是loader、再是child container、再是pipeline
      * 启动完子组件之后，检查configure标志位，如果没问题，那就启动filter和manager和listener
@@ -1443,7 +1455,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
 
             manager.setContext (this);
-            manager.setMaxActive (getSessionTimeout ());
+            manager.setSessionMaxAliveTime (getSessionTimeout ());
             if (manager instanceof Lifecycle) {
                 ((Lifecycle) manager).start ();
             }

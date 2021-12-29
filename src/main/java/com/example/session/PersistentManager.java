@@ -135,8 +135,8 @@ public class PersistentManager
                     ((StandardSession) session).tellNew ();//????源码是这样的
                     ((StandardSession) session).activate ();
                     add (session);
+                    //因为只有被访问到才会swapIn,防止没有被access？
                     session.access ();//????源码是这样的
-                    session.endAccess ();//????源码是这样的
                 }
             }
         }
@@ -305,6 +305,7 @@ public class PersistentManager
         processMaxIdleSwaps ();
         processMaxActiveSwaps ();
         processMaxIdleBackups ();
+        log.debug ("Session 换入、换出、备份检查结束");
     }
 
     @Override

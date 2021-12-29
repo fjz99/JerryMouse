@@ -622,26 +622,20 @@ public class StandardSession implements Session, HttpSession, Serializable {
     }
 
     /**
-     * 先调用access，在给用户的servlet
+     * 会设置new=false，所以当且仅当在host映射到context的时候才会access
+     * 这样可以保证即使context内部500了，也能access session
+     * 其实实现方式很多。。多次access也行，servlet规范要求忽略servlet的处理时间
      */
     @Override
     public void access() {
-        thisAccessedTime = System.currentTimeMillis ();
+        this.isNew = false;
+        this.lastAccessedTime = this.thisAccessedTime;
+        this.thisAccessedTime = System.currentTimeMillis ();
     }
 
     @Override
     public void addSessionListener(SessionListener listener) {
         listeners.add (listener);
-    }
-
-    /**
-     * 用户执行完之后，再执行这个endAccess
-     */
-    @Override
-    public void endAccess() {
-        isNew = false;
-
-        thisAccessedTime = System.currentTimeMillis ();
     }
 
     @Override
@@ -722,55 +716,6 @@ public class StandardSession implements Session, HttpSession, Serializable {
         } catch (Throwable e) {
             e.printStackTrace ();
             log.error ("在执行 {} 回调时，发生异常 {}", msg, e.toString ());
-        }
-    }
-
-    /**
-     * 内部使用的回调通知方法 <p>
-     * 此方法只根据方法名区分方法，不会考虑签名
-     *
-     * @param callbackType 回调类类型
-     * @param methodName   回调方法名
-     * @param isLifecycle  true 代表是false代表是getApplicationLifecycleListeners，
-     *                     false代表是getApplicationEventListeners
-     * @throws ReflectiveOperationException 表示callbackType中没有methodName，或者有多个methodName
-     * @deprecated 不适合使用反射，因为event type也不同
-     */
-    @Deprecated
-    protected void notifyServletListeners(Class<?> callbackType, String methodName, boolean isLifecycle)
-            throws ReflectiveOperationException {
-        Object[] listeners;
-        if (isLifecycle) {
-            listeners = getManager ().getContext ().getApplicationLifecycleListeners ();
-        } else {
-            listeners = getManager ().getContext ().getApplicationEventListeners ();
-        }
-        if (!(listeners != null && listeners.length > 0)) {
-            return;
-        }
-
-        //获得方法
-        Method method = null;
-        for (Method declaredMethod : callbackType.getDeclaredMethods ()) {
-            if (declaredMethod.getName ().equals (methodName)) {
-                if (method != null) {
-                    throw new ReflectiveOperationException ();
-                } else {
-                    method = declaredMethod;
-                }
-            }
-        }
-        if (method == null) {
-            throw new ReflectiveOperationException ();
-        }
-
-        for (Object listener : listeners) {
-            //父类 isAssignableFrom 子类
-            if (callbackType.isAssignableFrom (listener.getClass ())) {
-                //拷贝一个session，避免被修改
-                HttpSessionEvent event = new HttpSessionEvent (getSession ());
-                method.invoke (listener, event);
-            }
         }
     }
 

@@ -139,6 +139,14 @@ public abstract class AbstractManager
         }
     }
 
+    public int getProcessExpiresFrequency() {
+        return processExpiresFrequency;
+    }
+
+    public void setProcessExpiresFrequency(int processExpiresFrequency) {
+        this.processExpiresFrequency = processExpiresFrequency;
+    }
+
     /**
      * 检查内存中的session超时
      * 此方法被子类重写了！从而实现不同的expire校验功能！
@@ -150,6 +158,7 @@ public abstract class AbstractManager
             //如果过期就会自动调用expire
             session.isValid ();
         }
+        log.debug ("内存session超时检查完成");
     }
 
     @Override

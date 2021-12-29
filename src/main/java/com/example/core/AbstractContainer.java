@@ -514,35 +514,30 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
             this.root = root;
         }
 
-        private String threadName() {
-            return Thread.currentThread ().getName ();
-        }
-
         @Override
         public void run() {
             if (getBackgroundProcessorDelay () <= 0) {
-                log.warn (threadName () + ":Delay<=0, return");
+                log.warn ("Delay<=0, return");
                 return;
             }
-            log.debug (threadName () + ":background task started.");
+            log.info ("background task started.");
 
             while (!stopThread) {
                 try {
                     Thread.sleep (getBackgroundProcessorDelay () * 1000L);
                 } catch (InterruptedException e) {
-                    e.printStackTrace ();
                     //可能是被stopThread方法唤醒了
-                    log.debug (threadName () + ":background task stopped.");
+                    log.debug ("background task stopped.", e);
                     return;
                 }
                 if (stopThread) {
-                    log.debug (threadName () + ":background task stopped.");
+                    log.debug ("background task stopped.");
                     return;
                 }
 
-                log.debug (threadName () + ":开始级联处理background task");
+                log.debug ("开始级联处理background task");
                 process (root);
-                log.debug (threadName () + ":处理background task结束");
+                log.debug ("处理background task结束");
             }
         }
 
@@ -569,8 +564,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
                 }
 
             } catch (Throwable e) {
-                e.printStackTrace ();
-                log.error (threadName () + ":线程异常", e);
+                log.error ("线程异常", e);
             } finally {
                 if (container instanceof Context) {
                     //把类加载器换回来

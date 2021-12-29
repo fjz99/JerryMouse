@@ -68,15 +68,14 @@ public abstract class AbstractStore
      * 所以在这个方法调用的时候，只要在内存中的map查询是否存在session即可
      */
     public void processExpires() {
-        if (((AbstractManager) getManager ()).getSessionMaxAliveTime () <= 0) {
+        if (getManager ().getSessionMaxAliveTime () <= 0) {
             return;
         }
         String[] strings;
         try {
             strings = expiredKeys ();
         } catch (IOException e) {
-            e.printStackTrace ();
-            log.error ("processExpires中，获得expiredKeys失败");
+            log.error ("processExpires中，获得expiredKeys失败", e);
             return;
         }
 
@@ -102,8 +101,7 @@ public abstract class AbstractStore
                 try {
                     remove (string);
                 } catch (IOException e) {
-                    e.printStackTrace ();
-                    log.error ("remove key {} err {}", string, e.toString ());
+                    log.error ("remove key" + string + " ERR", e.toString ());
                 }
 
                 if (manager instanceof PersistentManager) {
@@ -127,6 +125,7 @@ public abstract class AbstractStore
                 session.recycle ();
             }
         }
+        log.debug ("Store session 超时检查结束");
     }
 
     /**

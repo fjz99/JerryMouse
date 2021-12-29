@@ -9,6 +9,9 @@ import com.example.life.EventType;
 import com.example.life.LifecycleEvent;
 import com.example.life.LifecycleException;
 import com.example.life.LifecycleListener;
+import com.example.session.AbstractManager;
+import com.example.session.FileStore;
+import com.example.session.PersistentManager;
 import org.apache.http.HttpEntity;
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
@@ -112,6 +115,15 @@ class StandardContextTest {
         context.setDisplayName ("Test");
         context.setPath ("/test");
         context.addLifecycleListener (new Listener ());
+        PersistentManager manager = new PersistentManager ();
+        manager.setProcessExpiresFrequency (1);
+        manager.setStore (new FileStore ());
+        manager.setMinIdleSwap (1);
+        manager.setMaxIdleSwap (2);
+        manager.setMaxIdleBackup (1);
+        context.setManager (manager);
+        context.setSessionTimeout (1);
+        context.setBackgroundProcessorDelay (5);
 
         context.addChild (wrapper);
         context.addChild (wrapper2);
