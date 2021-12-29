@@ -1,10 +1,16 @@
 package com.example.connector.http;
 
+import com.example.Globals;
 import com.example.connector.AbstractRequest;
 import com.example.connector.Connector;
 import com.example.connector.HttpRequest;
+import com.example.session.Manager;
+import com.example.session.Session;
+import com.example.session.StandardSession;
+import com.example.session.StandardSessionFacade;
 import com.example.util.RequestUtil;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -14,25 +20,53 @@ import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.example.connector.http.Constants.SET_COOKIE;
+
 
 /**
  * 目前只有1.1版本
  *
  * @date 2021/12/8 20:22
  */
-@ToString
+@Slf4j
 public class HttpRequestImpl extends AbstractRequest implements HttpRequest, HttpServletRequest {
     protected final Connector connector;
     protected Map<String, List<String>> headers = new ConcurrentHashMap<> ();
     protected Map<String, Cookie> cookies = new ConcurrentHashMap<> ();
     protected String method;
+    /**
+     * query
+     * xx=xx&xx=xx
+     */
     protected String queryString;
+    /**
+     * context的path，比如某个context是/root
+     */
     protected String contextPath;
+    /**
+     * 请求uri，去除host、port、schema、query
+     */
     protected String requestURI;
+    /**
+     * url解码后的requestURI
+     */
     protected String decodedRequestURI;
+    /**
+     * servlet路径，即去除context path的requestURI？？？
+     */
     protected String servletPath;
     protected InetAddress inet;
     protected String pathInfo;
+    /**
+     * 会话id，会被connector解析器设置，id一般存在于query或者cookie中
+     */
+    protected String requestedSessionId;
+    protected Session session;
+    /**
+     * id存在于query还是cookie中？
+     */
+    protected boolean requestedSessionCookie = false;
+    protected boolean requestedSessionURL = false;
 
     public HttpRequestImpl(Connector connector) {
         this.connector = connector;
@@ -50,6 +84,10 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
         decodedRequestURI = null;
         servletPath = null;
         pathInfo = null;
+        requestedSessionCookie = false;
+        requestedSessionURL = false;
+        requestedSessionId = null;
+        session = null;
     }
 
     /**
@@ -70,6 +108,9 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
         this.inet = inet;
     }
 
+    /**
+     * 会覆盖
+     */
     @Override
     public void addCookie(Cookie cookie) {
         cookies.put (cookie.getName (), cookie);
@@ -102,9 +143,6 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
 
     /**
      * 会覆盖
-     *
-     * @param name   Name of this request parameter
-     * @param values Corresponding values for this request parameter
      */
     @Override
     public void addParameter(String name, String[] values) {
@@ -133,7 +171,10 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
 
     /**
      * 获得解码之后的uri，即url编码的字符串再解码的结果
-     * 是全写如http://ssss/sss/sss ??
+     * 如/ssss/sss/sss
+     * 不包括schema、host、不包含query
+     * 指的是path
+     * schema://host[:port#]/path/.../[?query-string][#anchor]
      */
     @Override
     public String getDecodedRequestURI() {
@@ -244,10 +285,7 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
         return null;
     }
 
-    /**
-     * 不知道是啥
-     * 获得区分context的uri，比如/root？？
-     */
+
     @Override
     public String getContextPath() {
         return contextPath;
@@ -296,13 +334,16 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
     }
 
     /**
-     * 会话，暂时没有实现 todo
+     * 会话
      */
     @Override
     public String getRequestedSessionId() {
-        return null;
+        return requestedSessionId;
     }
 
+    public void setRequestedSessionId(String requestedSessionId) {
+        this.requestedSessionId = requestedSessionId;
+    }
 
     @Override
     public String getRequestURI() {
@@ -355,59 +396,119 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
     }
 
     /**
-     * 会话，暂时没有实现 todo
+     * 创建一个会话，注意检查会话超时
      */
     @Override
     public HttpSession getSession(boolean create) {
-        return null;
+        if (getContext () == null) {
+            return null;
+        }
+
+        if (session != null && session.isValid ()) {
+            return session.getSession ();
+        } else {
+            session = null;
+        }
+
+        Manager manager = getContext ().getManager ();
+        if (manager == null) {
+            return null;
+        }
+
+        if (requestedSessionId != null) {
+            try {
+                session = manager.findSession (requestedSessionId);
+                if (session != null && session.isValid ()) {
+                    return session.getSession ();
+                } else {
+                    session = null;
+                }
+            } catch (IOException e) {
+                log.error ("", e);
+                return null;
+            }
+        }
+
+        if (!create) {
+            return null;
+        }
+
+        session = manager.createSession (requestedSessionId);
+        if (session != null) {
+            return session.getSession ();
+        } else {
+            return null;
+        }
     }
 
     /**
-     * 会话，暂时没有实现 todo
+     * 会话
      */
     @Override
     public HttpSession getSession() {
-        return null;
+        return getSession (true);
     }
 
-    /**
-     * 会话，暂时没有实现 todo
-     */
+
     @Override
     public String changeSessionId() {
-        return null;
+        getSession (false);
+        if (session == null) {
+            throw new IllegalStateException ();
+        }
+
+        if (getContext () == null) {
+            throw new IllegalStateException ("没有context与这个request关联");
+        }
+        if (getContext ().getManager () == null) {
+            throw new IllegalStateException ("没有manager与这个request关联");
+        }
+
+        getContext ().getManager ().changeSessionId (session);
+        return session.getIdInternal ();
     }
 
-    /**
-     * 会话，暂时没有实现 todo
-     */
+
     @Override
     public boolean isRequestedSessionIdValid() {
-        return false;
+        getSession (false);
+        if (session == null) {
+            return false;
+        }
+        return session.isValid ();
     }
 
-    /**
-     * 会话，暂时没有实现 todo
-     */
+    public void setRequestedSessionCookie(boolean requestedSessionCookie) {
+        this.requestedSessionCookie = requestedSessionCookie;
+    }
+
+    public void setRequestedSessionURL(boolean requestedSessionURL) {
+        this.requestedSessionURL = requestedSessionURL;
+    }
+
     @Override
     public boolean isRequestedSessionIdFromCookie() {
-        return false;
+        if (requestedSessionId == null) {
+            return false;
+        }
+
+        return requestedSessionCookie;
     }
 
-    /**
-     * 会话，暂时没有实现 todo
-     */
+
     @Override
     public boolean isRequestedSessionIdFromURL() {
-        return false;
+        if (requestedSessionId == null) {
+            return false;
+        }
+
+        return requestedSessionURL;
     }
 
-    /**
-     * 会话，暂时没有实现 todo
-     */
+
     @Override
     public boolean isRequestedSessionIdFromUrl() {
-        return false;
+        return isRequestedSessionIdFromURL ();
     }
 
     /**
@@ -435,7 +536,7 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
     }
 
     /**
-     * 不实现
+     * TODO 文件上传功能
      */
     @Override
     public Collection<Part> getParts() throws IOException, ServletException {
@@ -443,7 +544,7 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
     }
 
     /**
-     * 不实现
+     * TODO 文件上传功能
      */
     @Override
     public Part getPart(String name) throws IOException, ServletException {
@@ -451,10 +552,21 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
     }
 
     /**
-     * 不实现
+     * 协议升级，不实现
      */
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException {
         return null;
+    }
+
+    //如果用@ToString的话，就会调用getSession方法，从而加载session
+    @Override
+    public String toString() {
+        return "HttpRequestImpl{" +
+                "headers=" + headers +
+                ", cookies=" + cookies +
+                ", method='" + method + '\'' +
+                ", decodedRequestURI='" + decodedRequestURI + '\'' +
+                '}';
     }
 }

@@ -22,18 +22,14 @@ import java.util.List;
  */
 @Slf4j
 public class HttpConnector extends LifecycleBase implements Connector {
-    private int port = 8080;
     private final String info = "com.example.connector.http.HttpConnector：一个 http connector";
     private final List<HttpProcessor> runningProcessors = new ArrayList<> ();
+    private int port = 8080;
     private Container container;
     private String scheme = "http";
     private boolean secure = false;
     private ChannelFuture future;
     private NioEventLoopGroup group;
-
-    public void setPort(int port) {
-        this.port = port;
-    }
 
     public Container getContainer() {
         return container;
@@ -104,10 +100,13 @@ public class HttpConnector extends LifecycleBase implements Connector {
         return info;
     }
 
-
     @Override
     public int getPort() {
         return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 
     @Override
@@ -167,8 +166,7 @@ public class HttpConnector extends LifecycleBase implements Connector {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            log.error ("exceptionCaught");
-            if (null != cause) cause.printStackTrace ();
+            log.error ("netty连接异常", cause);
             if (null != ctx) ctx.close ();
         }
     }

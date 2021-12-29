@@ -34,6 +34,11 @@ public class StandardContextValve extends AbstractValve {
         HttpServletRequest hreq = (HttpServletRequest) request.getRequest ();
         HttpServletResponse hresp = ((HttpServletResponse) response.getResponse ());
 
+        //为了测试用
+        if (request.getContext () == null) {
+            request.setContext ((Context) getContainer ());
+        }
+
         /*
          * 访问静态资源使用default servlet
          * 但是也要保护web-inf和meta-inf文件夹不被静态访问

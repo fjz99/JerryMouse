@@ -3,15 +3,27 @@ package com.example.core;
 import com.example.Context;
 import com.example.Wrapper;
 import com.example.connector.http.HttpConnector;
-import com.example.life.*;
-import com.example.loader.Loader;
-import com.example.loader.WebappLoader;
+import com.example.httpUtil.HttpTestUtil;
+import com.example.httpUtil.MatchFailedException;
+import com.example.life.EventType;
+import com.example.life.LifecycleEvent;
+import com.example.life.LifecycleException;
+import com.example.life.LifecycleListener;
+import org.apache.http.HttpEntity;
+import org.apache.http.ParseException;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.junit.jupiter.api.Test;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StandardContextTest {
     @Test
@@ -40,13 +52,13 @@ class StandardContextTest {
     }
 
     @Test
-    void test2() throws LifecycleException {
+    void test2() throws LifecycleException, MatchFailedException, IOException, URISyntaxException {
         StandardContext context = new StandardContext ();
         HttpConnector connector = new HttpConnector ();
 
         Wrapper wrapper = new StandardWrapper ();
         wrapper.setName ("Modern");
-        wrapper.setServletClass ("com.example.servlet.ModernServlet");
+        wrapper.setServletClass ("ModernServlet");
 
         connector.setContainer (context);
         context.setDocBase ("webapps/testContext");
@@ -57,6 +69,56 @@ class StandardContextTest {
 
         context.addChild (wrapper);
         context.addServletMapping ("/servlet", "Modern");
+
+        context.start ();
+        new Thread (() -> {
+            try {
+                connector.start ();
+            } catch (LifecycleException e) {
+                e.printStackTrace ();
+            }
+        }).start ();
+
+        //test
+        HttpTestUtil.get ("http://localhost:8080/test/servlet")
+                .isOk ()
+                .printBody ();
+
+//        connector.stop ();
+//        context.stop ();
+    }
+
+    @Test
+    void runServer() throws LifecycleException {
+        StandardContext context = new StandardContext ();
+        HttpConnector connector = new HttpConnector ();
+        connector.setPort (8080);
+
+        Wrapper wrapper = new StandardWrapper ();
+        wrapper.setName ("Modern");
+        wrapper.setServletClass ("ModernServlet");
+
+        Wrapper wrapper2 = new StandardWrapper ();
+        wrapper2.setName ("Session");
+        wrapper2.setServletClass ("SessionServlet");
+
+        Wrapper wrapper3 = new StandardWrapper ();
+        wrapper3.setName ("Pr");
+        wrapper3.setServletClass ("PrimitiveServlet");
+
+        connector.setContainer (context);
+        context.setDocBase ("webapps/testContext");
+        context.setWorkDir ("/workdir");//和docbase不同
+        context.setDisplayName ("Test");
+        context.setPath ("/test");
+        context.addLifecycleListener (new Listener ());
+
+        context.addChild (wrapper);
+        context.addChild (wrapper2);
+        context.addChild (wrapper3);
+        context.addServletMapping ("/servlet", "Modern");
+        context.addServletMapping ("/session", "Session");
+        context.addServletMapping ("/pr", "Pr");
 
         context.start ();
         connector.start ();

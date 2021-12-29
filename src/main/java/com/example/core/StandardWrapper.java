@@ -234,7 +234,7 @@ public final class StandardWrapper extends AbstractContainer implements Wrapper,
      * @param servlet The servlet to be returned
      */
     @Override
-    public void deallocate(Servlet servlet) throws ServletException {
+    public void deallocate(Servlet servlet) {
 
     }
 

@@ -1,5 +1,6 @@
 package com.example.connector.http;
 
+import com.example.Globals;
 import com.example.connector.ByteBufInputStream;
 import com.example.connector.ByteBufOutputStream;
 import com.example.life.LifecycleBase;
@@ -16,7 +17,9 @@ import io.netty.handler.codec.http.multipart.MemoryAttribute;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
@@ -31,9 +34,14 @@ import static com.example.connector.http.Constants.*;
  */
 @Slf4j
 public final class HttpProcessor extends LifecycleBase {
+    /**
+     * 用于匹配在query中的session id
+     */
+    private static final String match = ";" + Globals.SESSION_PARAMETER_NAME + "=";
 
     private final StringParser parser = new StringParser ();
-    private HttpConnector connector;
+    private final HttpConnector connector;
+    private final int port;
     private HttpRequestImpl request;
     private HttpResponseImpl response;
     private FullHttpRequest fullHttpRequest;
@@ -41,8 +49,6 @@ public final class HttpProcessor extends LifecycleBase {
     private ChannelHandlerContext handlerContext;
     private ByteBuf reqBuf;
     private ByteBuf respBuf;
-    private int port;
-    private boolean started = false;
 
     public HttpProcessor(HttpConnector httpConnector) {
         this.connector = httpConnector;
@@ -77,7 +83,7 @@ public final class HttpProcessor extends LifecycleBase {
 
             try {
                 //container.invoke
-                connector.getContainer ().getPipeline ().invoke (request, response);
+                connector.getContainer ().invoke (request, response);
             } catch (Exception e) {
                 e.printStackTrace ();
                 response.sendError (HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -148,39 +154,72 @@ public final class HttpProcessor extends LifecycleBase {
                 //cookie
                 List<Cookie> cookies = RequestUtil.parseCookieHeader (value);
                 for (Cookie cookie : cookies) {
-//                    todo session
-//                    if (cookie.getName ().equals
-//                            (Globals.SESSION_COOKIE_NAME)) {
-//                        // Override anything requested in the URL
-//                        if (!request.isRequestedSessionIdFromCookie ()) {
-//                            // Accept only the first session id cookie
-//                            request.setRequestedSessionId
-//                                    (cookie.getValue ());
-//                            request.setRequestedSessionCookie (true);
-//                            request.setRequestedSessionURL (false);
-//                        }
-//                    }
+                    //解析session
+                    parseSessionFromCookie (cookie);
                     request.addCookie (cookie);
                 }
             }
         }
 
-        String uri = request.getDecodedRequestURI ();
+        String uri = fullHttpRequest.uri ();
         int index;
         if ((index = uri.indexOf ('?')) >= 0) {
             request.setQueryString (uri.substring (index + 1));
+            request.setRequestURI (uri.substring (0, index));//必须是没有query、schema、host、port的
+        } else {
+            request.setRequestURI (uri);
         }
+
+        parseSessionFromURL (uri);
 
         //提取query param
         Map<String, String[]> map = new HashMap<> ();
         RequestUtil.parseParameters (map, request.getQueryString (), "utf-8");
         request.setParameterMap (map);
 
-        log.debug ("装填headers后为 {}", request.headers);
+        log.trace ("装填headers后为 {}", request.headers);
+    }
+
+    private void parseSessionFromURL(String uri) {
+        int semicolon = uri.indexOf (match);
+        if (semicolon >= 0) {
+            String rest = uri.substring (semicolon + match.length ());
+            int semicolon2 = rest.indexOf (';');
+            if (semicolon2 >= 0) {
+                request.setRequestedSessionId (rest.substring (0, semicolon2));
+            } else {
+                request.setRequestedSessionId (rest);
+            }
+            request.setRequestedSessionURL (true);
+            log.debug ("Requested URL session id is " + request.getRequestedSessionId ());
+        } else {
+            //因为id可能被cookie设置了，所以不要管id
+            //request.setRequestedSessionId (null);
+            request.setRequestedSessionURL (false);
+        }
+    }
+
+    /**
+     * 由cookie获得session
+     */
+    private void parseSessionFromCookie(Cookie cookie) {
+        if (cookie.getName ().equals
+                (Globals.SESSION_COOKIE_NAME)) {
+
+            if (!request.isRequestedSessionIdFromCookie ()) {
+                //如果有多个session id的话（因为cookie一个key可以多个value），就保留第一个
+                request.setRequestedSessionId (cookie.getValue ());
+                request.setRequestedSessionCookie (true);
+                request.setRequestedSessionURL (false);
+                log.debug ("Requested cookie session id is " + request.getRequestedSessionId ());
+            }
+        }
     }
 
     /**
      * 复杂的地方在于要处理权重
+     * 但是似乎还没有用到这个字段
+     * TODO
      */
     private void parseAcceptLanguage(String value) {
 
@@ -301,7 +340,6 @@ public final class HttpProcessor extends LifecycleBase {
         request.setProtocol (fullHttpRequest.protocolVersion ().protocolName ());
         request.setServerPort (port);
         request.setMethod (fullHttpRequest.method ().name ());
-        request.setRequestURI (fullHttpRequest.uri ().toLowerCase ());//fixme 要求是特殊的地址
         request.setSecure (connector.getSecure ());
         request.setScheme (connector.getScheme ());
 
@@ -375,12 +413,22 @@ public final class HttpProcessor extends LifecycleBase {
 
         handlerContext.writeAndFlush (fullHttpResponse);
 
-        log.info ("发送响应结束,status={},响应headers = {}",
-                response.getStatus (), response.headers);
+        log.info ("请求 {} {} 发送响应, status={}", request.getMethod (), request.getDecodedRequestURI (),
+                response.getStatus ());
+        log.debug ("响应headers:");
+        respHeaders.forEach (x -> log.debug ("header: {} -> {}", x.getKey (), x.getValue ()));
     }
 
+    /**
+     * 将cookie重新编码成uri，session id已经放到cookie中了
+     * fixme 基于uri的session id咋样？？
+     */
     private void parseCookieToHeader(HttpHeaders respHeaders) {
-        //cookie
+        //添加session id
+        HttpSession session = request.getSession (true);
+        Cookie cookie = new Cookie (Globals.SESSION_COOKIE_NAME, session.getId ());
+        response.addCookie (cookie);
+
         StringBuilder builder = new StringBuilder ();
         Cookie[] cookies = response.getCookies ();
         if (cookies.length == 0)
@@ -393,7 +441,8 @@ public final class HttpProcessor extends LifecycleBase {
             builder.append (s);
         }
 
-        respHeaders.set (HttpHeaderNames.SET_COOKIE.toString (), builder.toString ());
+        respHeaders.set (SET_COOKIE, builder.toString ());
+        log.trace ("添加cookie header {}", builder);
     }
 
     private void recycle() {

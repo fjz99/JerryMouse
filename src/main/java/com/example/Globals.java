@@ -7,6 +7,21 @@ package com.example;
  */
 public final class Globals {
 
+    /**
+     * The name of the cookie used to pass the session identifier back
+     * and forth with the client.
+     */
+    public static final String SESSION_COOKIE_NAME = "JSESSIONID";
+
+
+    /**
+     * The name of the path parameter used to pass the session identifier
+     * back and forth with the client.
+     */
+    public static final String SESSION_PARAMETER_NAME = "jsessionid";
+
+    public static final String SERVER_INFO = "JerryMouse/0.1.alpha";
+
     // ------------------------------------------------- Request attribute names
 
     public static final String ASYNC_SUPPORTED_ATTR = "org.apache.catalina.ASYNC_SUPPORTED";

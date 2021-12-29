@@ -30,10 +30,15 @@ public class StandardWrapperValve extends AbstractValve {
 
     @Override
     public void invoke(Request request, Response response) throws IOException, ServletException {
-        Wrapper wrapper = (Wrapper) this.container;
-        Context context = (Context) container.getParent ();
+        Wrapper wrapper = (Wrapper) getContainer ();
+        Context context = (Context) getContainer ().getParent ();
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+
+        //为了测试用
+        if (request.getWrapper () == null) {
+            request.setWrapper (wrapper);
+        }
 
 
         //1.检查服务不可用的问题（比如启动失败等）

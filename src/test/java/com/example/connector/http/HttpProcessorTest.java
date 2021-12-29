@@ -19,8 +19,7 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -33,7 +32,7 @@ class HttpProcessorTest {
     String testUri1 = "/test?a=1&a=2&b=3&c=abc";
     String testUri2 = "/test";
     String testUri3 = "http://www.test.cn";
-    String testUri4 = "http://test;JESSESSIONID=0dsadaxdsax12";
+    String testUri4 = "http://test;jsessionid=0dsadaxdsax12";
     String testUri5 = "https://event.csdn.net/logstores/csdn-pc-tracking-pageview/track_ua.gif?APIVersion=0.6.0&cid=10_" +
             "6069934530-1630585757536-284397&sid=10_1639135330659.764487&pid=blog&uid=&did=10_6069934530-1630585757536-" +
             "284397&dc_sid=effc4382b7257c75381ab84a84033a92&ref=&curl=https%3A%2F%2Fblog.csdn.net%2Fqq_40491569%2Farticle" +
@@ -151,7 +150,6 @@ class HttpProcessorTest {
     @Test
     public void testHeadersWrite() throws IOException, ServletException {
         containerDo (invocation -> {
-            HttpRequestImpl argument = invocation.getArgument (0);
             HttpResponseImpl resp = invocation.getArgument (1);
 
             resp.addHeader ("aa", "bb");
@@ -182,7 +180,6 @@ class HttpProcessorTest {
     @Test
     public void testCookie() throws ServletException, IOException {
         containerDo (invocation -> {
-            HttpRequestImpl argument = invocation.getArgument (0);
             HttpResponseImpl resp = invocation.getArgument (1);
             resp.addCookie (new Cookie ("ff","vv"));
             resp.addCookie (new Cookie ("gggg","qqqqqqq"));
@@ -195,6 +192,46 @@ class HttpProcessorTest {
         }).when (handlerContext).writeAndFlush (any ());
 
         request = new DefaultFullHttpRequest (HttpVersion.HTTP_1_1, HttpMethod.GET, testUri5);
+        httpProcessor.process (request, handlerContext);
+    }
+
+    @Test
+    public void testSessionParser1() throws ServletException, IOException {
+        containerDo (invocation -> {
+            HttpRequestImpl argument = invocation.getArgument (0);
+            assertEquals (argument.getRequestedSessionId (),"0dsadaxdsax12");
+            assertTrue (argument.isRequestedSessionIdFromURL ());
+            assertFalse (argument.isRequestedSessionIdFromCookie ());
+            return null;
+        });
+        doAnswer (invocation -> {
+            FullHttpResponse response = invocation.getArgument (0);
+            System.out.println (response.headers ());
+            return null;
+        }).when (handlerContext).writeAndFlush (any ());
+
+        request = new DefaultFullHttpRequest (HttpVersion.HTTP_1_1, HttpMethod.GET, testUri4);
+        httpProcessor.process (request, handlerContext);
+    }
+
+    @Test
+    public void testSessionParser2() throws ServletException, IOException {
+        containerDo (invocation -> {
+            HttpRequestImpl request = invocation.getArgument (0);
+            assertEquals (request.getRequestedSessionId (),"0dsadaxdsax12");
+            assertFalse (request.isRequestedSessionIdFromURL ());
+            assertTrue (request.isRequestedSessionIdFromCookie ());
+            return null;
+        });
+        doAnswer (invocation -> {
+            FullHttpResponse response = invocation.getArgument (0);
+            System.out.println (response.headers ());
+            return null;
+        }).when (handlerContext).writeAndFlush (any ());
+
+        request = new DefaultFullHttpRequest (HttpVersion.HTTP_1_1, HttpMethod.GET, testUri3);
+        HttpHeaders headers = request.headers ();
+        headers.set ("Cookie", "JSESSIONID=0dsadaxdsax12");
         httpProcessor.process (request, handlerContext);
     }
 }

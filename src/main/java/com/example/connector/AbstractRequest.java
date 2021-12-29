@@ -4,6 +4,7 @@ import com.example.Context;
 import com.example.Wrapper;
 import com.example.connector.http.HttpConnector;
 import com.example.connector.http.HttpRequestStream;
+import com.example.session.Session;
 
 import javax.servlet.*;
 import java.io.*;
@@ -78,8 +79,9 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     protected Response response;
 
     protected Map<String, Object> notes = new ConcurrentHashMap<> ();
-    private Wrapper wrapper;
-    private Context context;
+    protected Wrapper wrapper;
+    protected Context context;
+
 
 //    protected ByteBuf byteBuf;
 

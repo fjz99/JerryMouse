@@ -5,7 +5,11 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -47,10 +51,32 @@ public final class FilterChainImpl implements FilterChain {
         } else if (pos == n) {
             //到末尾了
             servlet.service (request, response);
+//            test ((HttpServletRequest) request, (HttpServletResponse) response);
             pos++;
         } else {
             throw new IllegalStateException ("filter chain pos err");
         }
+    }
+
+    private void test(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        System.out.println ("SessionServlet -- service");
+        response.setContentType ("text/html");
+        PrintWriter out = response.getWriter ();
+        out.println ("<html>");
+        out.println ("<head><title>SessionServlet</title></head>");
+        out.println ("<body>");
+        String value = request.getParameter ("value");
+        HttpSession session = request.getSession (true);
+        out.println ("<br>the previous value is " + session.getAttribute ("value"));
+        out.println ("<br>the current value is " + value);
+        session.setAttribute ("value", value);
+        out.println ("<br><hr>");
+        out.println ("<form>");
+        out.println ("New Value: <input name=value>");
+        out.println ("<input type=submit>");
+        out.println ("</form>");
+        out.println ("</body>");
+        out.println ("</html>");
     }
 
     //检验pos==n??

@@ -26,4 +26,5 @@ public final class Constants {
     public static final String CLOSE = HttpHeaderValues.CLOSE.toString ();
     public static final String APPLICATION_JSON = HttpHeaderValues.APPLICATION_JSON.toString ();
     public static final String LOCATION = HttpHeaderNames.LOCATION.toString ();
+    public static final String SET_COOKIE = HttpHeaderNames.SET_COOKIE.toString ();
 }

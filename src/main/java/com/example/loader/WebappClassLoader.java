@@ -488,7 +488,7 @@ public class WebappClassLoader
                 }
             }
         }
-        log.debug ("定位到resource {}", resourceEntries.get (name));
+        log.trace ("定位到resource {}", resourceEntries.get (name));
         return resourceEntries.get (name);
     }
 

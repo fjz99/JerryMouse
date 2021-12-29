@@ -11,7 +11,6 @@ public final class Constants {
      */
     public static final String SYSTEM_PREFIX;
     public static final String Package = "com.example.core";
-    public static final String SERVER_INFO = "JerryMouse/0.1.alpha by fjz";
 
     /**
      * 实现的servlet的版本号

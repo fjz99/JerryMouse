@@ -81,6 +81,8 @@ public final class StandardContextMapper implements Mapper {
      * based upon its characteristics.  If no such child Container can be
      * identified, return <code>null</code> instead.
      *
+     * <p><strong>传递的uri参数必须去除query<strong/><p/>
+     *
      * @param request Request being processed
      * @param update  Update the Request to reflect the mapping selection?
      * @throws IllegalArgumentException if the relative portion of the
@@ -95,6 +97,10 @@ public final class StandardContextMapper implements Mapper {
         String contextPath = context.getPath ();
         String requestURI = ((HttpRequest) request).getDecodedRequestURI ();
         String relativeURI = requestURI.substring (contextPath.length ());
+
+        if (requestURI.contains ("?")) {
+            throw new AssertionError ("传递的uri参数必须去除query");
+        }
 
         log.debug ("Mapping contextPath='" + contextPath +
                 "' with requestURI='" + requestURI +
