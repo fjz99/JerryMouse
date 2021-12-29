@@ -7,6 +7,47 @@ package com.example;
  */
 public final class Globals {
 
+
+    /**
+     * The request attribute under which the original context path is stored
+     * on an included dispatcher request.
+     */
+    public static final String CONTEXT_PATH_ATTR =
+            "javax.servlet.include.context_path";
+
+
+    /**
+     * The request attribute under which we forward a Java exception
+     * (as an object of type Throwable) to an error page.
+     */
+    public static final String EXCEPTION_ATTR =
+            "javax.servlet.error.exception";
+
+
+    /**
+     * The request attribute under which we forward the request URI
+     * (as an object of type String) of the page on which an error occurred.
+     */
+    public static final String EXCEPTION_PAGE_ATTR =
+            "javax.servlet.error.request_uri";
+
+
+    /**
+     * The request attribute under which we forward a Java exception type
+     * (as an object of type Class) to an error page.
+     */
+    public static final String EXCEPTION_TYPE_ATTR =
+            "javax.servlet.error.exception_type";
+
+
+    /**
+     * The request attribute under which we forward an HTTP status message
+     * (as an object of type STring) to an error page.
+     */
+    public static final String ERROR_MESSAGE_ATTR =
+            "javax.servlet.error.message";
+
+
     /**
      * The name of the cookie used to pass the session identifier back
      * and forth with the client.
@@ -19,11 +60,11 @@ public final class Globals {
      * back and forth with the client.
      */
     public static final String SESSION_PARAMETER_NAME = "jsessionid";
-
-    public static final String SERVER_INFO = "JerryMouse/0.1.alpha";
+    public static final String SERVER_INFO_WITH_NO_VERSION = "JerryMouse";
+    public static final String SERVER_INFO = SERVER_INFO_WITH_NO_VERSION + "/0.1.alpha";
+    public static final String SERVER_INFO_WITH_AUTHOR = SERVER_INFO + " - by Fjz";
 
     // ------------------------------------------------- Request attribute names
-
     public static final String ASYNC_SUPPORTED_ATTR = "org.apache.catalina.ASYNC_SUPPORTED";
 
 

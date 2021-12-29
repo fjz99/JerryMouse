@@ -249,29 +249,29 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
             throw new IllegalStateException ("suspend");
         }
 
+        setError ();
         status = HttpResponseStatus.valueOf (sc);
         message = msg;
 
         setSuspended (true);
     }
 
-    //具体由外部包装发送
+    /**
+     * 具体由外部包装发送
+     * 所以也无所谓Suspended了
+     * 而且我的代码中Suspended标志并没有被使用？？ FIXME
+     */
     @Override
     public void sendError(int sc) {
-        if (isSuspended ()) {
-            throw new IllegalStateException ("suspend");
-        }
 
+        setError ();
         status = HttpResponseStatus.valueOf (sc);
 
         setSuspended (true);
     }
 
     @Override
-    public void sendRedirect(String location) throws IOException {
-        if (isSuspended ()) {
-            throw new IllegalStateException ("suspend");
-        }
+    public void sendRedirect(String location) {
 
         status = HttpResponseStatus.FOUND;//302 本来叫Moved Temporarily
 //        fullHttpResponse.setStatus (status);

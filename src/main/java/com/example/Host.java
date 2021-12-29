@@ -30,9 +30,6 @@ import java.util.regex.Pattern;
 public interface Host extends Container {
 
 
-    // ----------------------------------------------------- Manifest Constants
-
-
     /**
      * The ContainerEvent event type sent when a new alias is added
      * by <code>addAlias()</code>.
@@ -45,9 +42,6 @@ public interface Host extends Container {
      * by <code>removeAlias()</code>.
      */
     String REMOVE_ALIAS_EVENT = "removeAlias";
-
-
-    // ------------------------------------------------------------- Properties
 
 
     /**
@@ -214,8 +208,6 @@ public interface Host extends Container {
     void setUndeployOldVersions(boolean undeployOldVersions);
 
 
-    // --------------------------------------------------------- Public Methods
-
     /**
      * Add an alias name that should be mapped to this same Host.
      *
@@ -237,4 +229,5 @@ public interface Host extends Container {
      * @param alias Alias name to be removed
      */
     void removeAlias(String alias);
+
 }

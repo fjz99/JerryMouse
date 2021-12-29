@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 /**
@@ -108,7 +110,7 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     @Override
     public void reset() {
         resetBuffer ();
-        outputStream = null;
+        servletOutputStream = null;
         writer = null;
     }
 
@@ -220,12 +222,12 @@ public abstract class AbstractResponse implements Response, ServletResponse {
     }
 
     @Override
-    public ServletOutputStream getOutputStream() throws IOException {
+    public ServletOutputStream getOutputStream() {
         return servletOutputStream;
     }
 
     @Override
-    public PrintWriter getWriter() throws IOException {
+    public PrintWriter getWriter() {
         if (writer == null) {
             writer = new PrintWriter (new OutputStreamWriter (outputStream));
         }
@@ -259,6 +261,9 @@ public abstract class AbstractResponse implements Response, ServletResponse {
         byteBuf.clear ();
     }
 
+    /**
+     * 会用于默认的错误保底页面
+     */
     @Override
     public PrintWriter getReporter() {
         if (isError ()) {

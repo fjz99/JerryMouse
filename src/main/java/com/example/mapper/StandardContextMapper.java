@@ -2,6 +2,7 @@ package com.example.mapper;
 
 
 import com.example.Container;
+import com.example.Context;
 import com.example.Mapper;
 import com.example.Wrapper;
 import com.example.connector.HttpRequest;
@@ -24,57 +25,7 @@ import javax.servlet.http.HttpServletRequest;
  * @version $Revision: 1.8 $ $Date: 2002/03/14 20:58:24 $
  */
 @Slf4j
-public final class StandardContextMapper implements Mapper {
-
-    /**
-     * The Container with which this Mapper is associated.
-     */
-    private StandardContext context = null;
-    /**
-     * The protocol with which this Mapper is associated.
-     */
-    private String protocol = null;
-
-
-    /**
-     * Return the Container with which this Mapper is associated.
-     */
-    public Container getContainer() {
-        return (context);
-    }
-
-
-    /**
-     * Set the Container with which this Mapper is associated.
-     *
-     * @param container The newly associated Container
-     * @throws IllegalArgumentException if this Container is not
-     *                                  acceptable to this Mapper
-     */
-    public void setContainer(Container container) {
-        if (!(container instanceof StandardContext))
-            throw new IllegalArgumentException ();
-        context = (StandardContext) container;
-    }
-
-
-    /**
-     * Return the protocol for which this Mapper is responsible.
-     */
-    public String getProtocol() {
-        return (this.protocol);
-    }
-
-
-    /**
-     * Set the protocol for which this Mapper is responsible.
-     *
-     * @param protocol The newly associated protocol
-     */
-    public void setProtocol(String protocol) {
-        this.protocol = protocol;
-    }
-
+public final class StandardContextMapper extends AbstractMapper {
 
     /**
      * Return the child Container that should be used to process this Request,
@@ -94,6 +45,7 @@ public final class StandardContextMapper implements Mapper {
             return (request.getWrapper ());
 
         // Identify the context-relative URI to be mapped
+        Context context = (Context) getContainer ();
         String contextPath = context.getPath ();
         String requestURI = ((HttpRequest) request).getDecodedRequestURI ();
         String relativeURI = requestURI.substring (contextPath.length ());

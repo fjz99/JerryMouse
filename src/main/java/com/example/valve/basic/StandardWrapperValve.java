@@ -1,6 +1,7 @@
 package com.example.valve.basic;
 
 import com.example.Context;
+import com.example.Globals;
 import com.example.Wrapper;
 import com.example.connector.Request;
 import com.example.connector.Response;
@@ -11,10 +12,7 @@ import com.example.valve.AbstractValve;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.servlet.FilterChain;
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.UnavailableException;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -64,12 +62,11 @@ public class StandardWrapperValve extends AbstractValve {
             return;
         } catch (Throwable e) {
             log.error ("wrapper.allocate失败", e);
-            sendException (httpServletResponse, e);
+            setException (httpServletRequest, httpServletResponse, e);
             return;
         }
 
         //3.创建一个filter chain
-        //fixme 有问题，因为加上了http://等，需要去掉
         String uri = ((HttpRequestImpl) httpServletRequest).getDecodedRequestURI ();
         FilterChain filterChain = FilterChainFactory.createFilterChain (uri, wrapper, servlet);
 
@@ -81,7 +78,7 @@ public class StandardWrapperValve extends AbstractValve {
             processUnavailable (httpServletResponse);
             log.error ("filterChain.doFilter时，服务不可用", e);
         } catch (Throwable e) {
-            sendException (httpServletResponse, e);
+            setException (httpServletRequest, httpServletResponse, e);
             log.error ("filterChain.doFilter失败", e);
         } finally {
             //保证一定释放资源
@@ -128,7 +125,11 @@ public class StandardWrapperValve extends AbstractValve {
         }
     }
 
-    private void sendException(HttpServletResponse httpServletResponse, Throwable e) {
+    /**
+     * 渲染err view需要借助attribute，因为err往往被catch了
+     */
+    private void setException(ServletRequest request, HttpServletResponse httpServletResponse, Throwable e) {
+        request.setAttribute (Globals.EXCEPTION_ATTR, e);
         httpServletResponse.setStatus (HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 

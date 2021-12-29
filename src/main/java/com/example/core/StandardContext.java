@@ -6,6 +6,7 @@ import com.example.Globals;
 import com.example.Wrapper;
 import com.example.connector.Request;
 import com.example.connector.Response;
+import com.example.deploy.ErrorPage;
 import com.example.descriptor.FilterDefinition;
 import com.example.descriptor.FilterMapping;
 import com.example.filter.FilterConfigImpl;
@@ -20,6 +21,7 @@ import com.example.session.StandardManager;
 import com.example.util.URLEncoder;
 import com.example.valve.basic.StandardContextValve;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -65,6 +67,20 @@ public final class StandardContext extends AbstractContainer implements Context 
     private final Object watchedResourcesLock = new Object ();
     private final Object welcomeFilesLock = new Object ();
     private final Object pausedLock = new Object ();
+
+    /**
+     * The exception pages for this web application, keyed by fully qualified
+     * class name of the Java exception.
+     * 出现某个java异常，应该返回哪个页面；
+     * 但是对于类似于{@link UnavailableException}这样的异常，并不会返回这个，而是503（服务不可用）
+     */
+    private final Map<String, ErrorPage> exceptionPages = new ConcurrentHashMap<> ();
+    /**
+     * The status code error pages for this web application, keyed by
+     * HTTP status code (as an Integer).
+     * 出现某个状态码（当然不是200状态码。。）应该返回哪个页面
+     */
+    private final Map<Integer, ErrorPage> statusPages = new ConcurrentHashMap<> ();
     /**
      * The ordered set of ServletContainerInitializers for this web application.
      */
@@ -248,6 +264,58 @@ public final class StandardContext extends AbstractContainer implements Context 
 
     public void setCookies(boolean cookies) {
         this.cookies = cookies;
+    }
+
+    @Override
+    public ErrorPage findErrorPage(int errorCode) {
+        return statusPages.get (errorCode);
+    }
+
+    @Override
+    public ErrorPage findErrorPage(Throwable throwable) {
+        return exceptionPages.get (throwable.getClass ().getCanonicalName ());
+    }
+
+    @Override
+    public ErrorPage findErrorPage(String exceptionType) {
+        return exceptionPages.get (exceptionType);
+    }
+
+    @Override
+    public ErrorPage[] findErrorPages() {
+        HashSet<ErrorPage> errorPages = new HashSet<> ();
+        errorPages.addAll (exceptionPages.values ());
+        errorPages.addAll (statusPages.values ());
+        return errorPages.toArray (new ErrorPage[0]);
+    }
+
+    @Override
+    public void addErrorPage(ErrorPage errorPage) {
+        Objects.requireNonNull (errorPage);
+
+        String location = errorPage.getLocation ();
+        if (location != null && !location.startsWith ("/")) {
+            errorPage.setLocation ("/" + location);
+        }
+
+        if (!StringUtils.isEmpty (errorPage.getExceptionType ())) {
+            exceptionPages.put (errorPage.getExceptionType (), errorPage);
+        } else {
+            statusPages.put (errorPage.getErrorCode (), errorPage);
+        }
+
+        fireContainerEvent ("addErrorPage", errorPage);
+    }
+
+    @Override
+    public void removeErrorPage(ErrorPage errorPage) {
+        if (!StringUtils.isEmpty (errorPage.getExceptionType ())) {
+            exceptionPages.remove (errorPage.getExceptionType ());
+        } else {
+            statusPages.remove (errorPage.getErrorCode ());
+        }
+
+        fireContainerEvent ("removeErrorPage", errorPage);
     }
 
     @Override

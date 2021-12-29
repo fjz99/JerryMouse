@@ -186,7 +186,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
                 .orElse (null);
     }
 
-    protected void addDefaultMapper(String mapperClass) {
+    protected final void addDefaultMapper(String mapperClass) {
         if (mapperClass == null) {
             return;
         }
@@ -321,6 +321,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
         }
     }
 
+    //FIXME 见tomcat8
     private int getRealPoolSize() {
         if (getStartStopThreads () <= 0) {
             return 1;
@@ -381,7 +382,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
      * @param isStop true代表是stop
      */
     private void startStopChildren(boolean isStop) {
-        ExecutorService executor = getExecutor ();
+        ExecutorService executor = getStartStopExecutor ();
         List<Future<?>> jobs = new ArrayList<> ();
         for (Container value : children.values ()) {
             Future<?> future = executor.submit (() -> {
@@ -410,7 +411,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
     /**
      * 注意这个线程池设计
      */
-    private ExecutorService getExecutor() {
+    public ExecutorService getStartStopExecutor() {
         if (startStopExecutor != null) {
             return startStopExecutor;
         }

@@ -1,6 +1,7 @@
 package com.example;
 
 
+import com.example.deploy.ErrorPage;
 import com.example.descriptor.FilterDefinition;
 import com.example.descriptor.FilterMapping;
 import com.example.loader.Loader;
@@ -534,7 +535,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param errorPage The error page definition to be added
      */
-//    void addErrorPage(ErrorPage errorPage);
+    void addErrorPage(ErrorPage errorPage);
 
 
     /**
@@ -671,7 +672,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param errorCode Error code to look up
      */
-//    ErrorPage findErrorPage(int errorCode);
+    ErrorPage findErrorPage(int errorCode);
 
 
     /**
@@ -681,8 +682,8 @@ public interface Context extends Container, ContextBind {
      * @deprecated Unused. Will be removed in Tomcat 10.
      * Use {@link #findErrorPage(Throwable)} instead.
      */
-//    @Deprecated
-//    ErrorPage findErrorPage(String exceptionType);
+    @Deprecated
+    ErrorPage findErrorPage(String exceptionType);
 
 
     /**
@@ -696,14 +697,14 @@ public interface Context extends Container, ContextBind {
      * @return the error page entry for the specified Java exception type,
      *         if any; otherwise return {@code null}.
      */
-//    ErrorPage findErrorPage(Throwable throwable);
+    ErrorPage findErrorPage(Throwable throwable);
 
 
     /**
      * @return the set of defined error pages for all specified error codes
      * and exception types.
      */
-//    ErrorPage[] findErrorPages();
+    ErrorPage[] findErrorPages();
 
 
     /**
@@ -848,7 +849,7 @@ public interface Context extends Container, ContextBind {
      *
      * @param errorPage The error page definition to be removed
      */
-//    void removeErrorPage(ErrorPage errorPage);
+    void removeErrorPage(ErrorPage errorPage);
 
 
     /**

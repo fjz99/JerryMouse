@@ -12,6 +12,7 @@ import com.example.life.LifecycleListener;
 import com.example.session.AbstractManager;
 import com.example.session.FileStore;
 import com.example.session.PersistentManager;
+import com.example.valve.ErrorReportValve;
 import org.apache.http.HttpEntity;
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
@@ -91,6 +92,12 @@ class StandardContextTest {
 //        context.stop ();
     }
 
+    /**
+     * test:
+     * ErrPage
+     * session
+     * servlet等
+     */
     @Test
     void runServer() throws LifecycleException {
         StandardContext context = new StandardContext ();
@@ -109,6 +116,10 @@ class StandardContextTest {
         wrapper3.setName ("Pr");
         wrapper3.setServletClass ("PrimitiveServlet");
 
+        Wrapper wrapper4 = new StandardWrapper ();
+        wrapper4.setName ("ERR");
+        wrapper4.setServletClass ("com.example.servlet.ExceptionServlet");
+
         connector.setContainer (context);
         context.setDocBase ("webapps/testContext");
         context.setWorkDir ("/workdir");//和docbase不同
@@ -123,14 +134,18 @@ class StandardContextTest {
         manager.setMaxIdleBackup (1);
         context.setManager (manager);
         context.setSessionTimeout (1);
-        context.setBackgroundProcessorDelay (5);
+//        context.setBackgroundProcessorDelay (5);
 
         context.addChild (wrapper);
         context.addChild (wrapper2);
         context.addChild (wrapper3);
+        context.addChild (wrapper4);
         context.addServletMapping ("/servlet", "Modern");
         context.addServletMapping ("/session", "Session");
         context.addServletMapping ("/pr", "Pr");
+        context.addServletMapping ("/err", "ERR");
+
+        context.getPipeline ().addValve (new ErrorReportValve ());
 
         context.start ();
         connector.start ();
