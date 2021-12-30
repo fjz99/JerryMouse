@@ -1,16 +1,11 @@
 package com.example.core;
 
 import com.example.Container;
-import com.example.Context;
-import com.example.Host;
-import com.example.Wrapper;
 import com.example.resource.FileDirContext;
-import javafx.print.Collation;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.*;
 import javax.servlet.descriptor.JspConfigDescriptor;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -18,7 +13,8 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.example.connector.http.Constants.SERVER_INFO;
+import static com.example.Globals.SERVER_INFO;
+
 
 /**
  * @date 2021/12/27 20:12

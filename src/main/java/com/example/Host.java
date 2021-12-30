@@ -140,32 +140,6 @@ public interface Host extends Container {
 
 
     /**
-     * @return the regular expression that defines the files and directories in
-     * the host's appBase that will be ignored by the automatic deployment
-     * process.
-     */
-    String getDeployIgnore();
-
-
-    /**
-     * @return the compiled regular expression that defines the files and
-     * directories in the host's appBase that will be ignored by the automatic
-     * deployment process.
-     */
-    Pattern getDeployIgnorePattern();
-
-
-    /**
-     * Set the regular expression that defines the files and directories in
-     * the host's appBase that will be ignored by the automatic deployment
-     * process.
-     *
-     * @param deployIgnore A regular expression matching file names
-     */
-    void setDeployIgnore(String deployIgnore);
-
-
-    /**
      * @return the executor that is used for starting and stopping contexts. This
      * is primarily for use by components deploying contexts that want to do
      * this in a multi-threaded manner.
@@ -188,25 +162,6 @@ public interface Host extends Container {
      * @param createDirs The new value for this flag
      */
     void setCreateDirs(boolean createDirs);
-
-
-    /**
-     * @return <code>true</code> of the Host is configured to automatically undeploy old
-     * versions of applications deployed using parallel deployment. This only
-     * takes effect is {@link #getAutoDeploy()} also returns <code>true</code>.
-     */
-    boolean getUndeployOldVersions();
-
-
-    /**
-     * Set to <code>true</code> if the Host should automatically undeploy old versions of
-     * applications deployed using parallel deployment. This only takes effect
-     * if {@link #getAutoDeploy()} returns <code>true</code>.
-     *
-     * @param undeployOldVersions The new value for this flag
-     */
-    void setUndeployOldVersions(boolean undeployOldVersions);
-
 
     /**
      * Add an alias name that should be mapped to this same Host.

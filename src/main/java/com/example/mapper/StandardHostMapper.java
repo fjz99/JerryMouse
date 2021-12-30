@@ -8,6 +8,7 @@ import com.example.connector.Request;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.TreeMap;
 
 /**
  * TODO 模仿tomcat8，把mapper放到request中
@@ -32,22 +33,20 @@ public final class StandardHostMapper extends AbstractMapper {
 
         // Match on the longest possible context path prefix
         log.trace ("Trying the longest context path prefix");
-        Context context;
-        String mapuri = uri;
-        while (true) {
-            context = (Context) container.findChild (mapuri);
-            if (context != null)
-                break;
-            int slash = mapuri.lastIndexOf ('/');
-            if (slash < 0)
-                break;
-            mapuri = mapuri.substring (0, slash);
-        }
+        Context context = null;
 
-        // If no Context matches, select the default Context
-        if (context == null) {
-            log.trace ("Trying the default context");
-            context = (Context) container.findChild ("");
+
+        for (Container child : getContainer ().findChildren ()) {
+            String path = ((Context) child).getPath ();
+            if (!path.startsWith ("/")) {
+                path = "/" + path;
+            }
+
+            if (uri.contains (path)) {
+                if (context == null || context.getPath ().length () < path.length ()) {
+                    context = ((Context) child);
+                }
+            }
         }
 
         // Complain if no Context has been selected
@@ -58,7 +57,7 @@ public final class StandardHostMapper extends AbstractMapper {
 
         log.debug (" Mapped to context '" + context.getPath () + "'");
 
-        if (request.getContext () == null) {
+        if (update) {
             request.setContext (context);
             ((HttpRequest) request).setContextPath (context.getPath ());
         }

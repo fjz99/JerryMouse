@@ -32,7 +32,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
     /**
      * name，唯一id，用在children上
      */
-    protected String name = "AbstractContainer";
+    protected String name = "NOT_NAMED";
     protected Pipeline pipeline = new StandardPipeline (this);
     protected Map<String, Container> children = new ConcurrentHashMap<> ();
     protected Container parent;
@@ -168,7 +168,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
         child.setParent (this);
         children.put (child.getName (), child);
 
-        if (startChildren) {
+        if (startChildren && isRunning ()) {
             try {
                 child.start ();
             } catch (LifecycleException e) {
@@ -345,6 +345,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
     }
 
 
+    //子类根本没用这个start方法
     @Override
     public void start() throws LifecycleException {
         super.start ();
@@ -381,7 +382,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
      *
      * @param isStop true代表是stop
      */
-    private void startStopChildren(boolean isStop) {
+    private void startStopChildren(final boolean isStop) {
         ExecutorService executor = getStartStopExecutor ();
         List<Future<?>> jobs = new ArrayList<> ();
         for (Container value : children.values ()) {

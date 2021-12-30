@@ -131,6 +131,7 @@ public final class StandardContextMapper extends AbstractMapper {
                     "' with servlet path '" + servletPath +
                     "' and path info '" + pathInfo +
                     "' and update=" + update);
+
         if (update) {
             request.setWrapper (wrapper);
             ((HttpRequest) request).setServletPath (servletPath);

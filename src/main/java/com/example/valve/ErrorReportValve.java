@@ -21,7 +21,6 @@ import java.util.Locale;
 
 /**
  * 实现默认的错误页面
- * TODO
  *
  * @date 2021/12/29 19:38
  */

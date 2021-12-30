@@ -32,7 +32,8 @@ public class StandardHostValve extends AbstractValve {
 
         Container container = getContainer ().map (request, true);
         if (container == null) {
-            ((HttpServletResponse) response).sendError (HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            ((HttpServletResponse) response).sendError (HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "无法找到对应的Context");
             log.error ("请求uri {} 映射不到任何context", ((HttpRequest) request).getDecodedRequestURI ());
             return;
         }

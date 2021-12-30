@@ -20,7 +20,7 @@ public class ExceptionServlet extends HttpServlet {
     }
 
     @Override
-    public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
+    public void service(ServletRequest req, ServletResponse res) {
         throw new AssertionError ();
     }
 }

@@ -1,5 +1,6 @@
 package com.example.connector.http;
 
+import com.example.Globals;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 
@@ -13,7 +14,6 @@ public final class Constants {
     //    public static final int WRITE_BUFFER_SIZE = 1024;//即写body的时候，会持续写
     public static final String DATE_TIME_FORMAT = "yyyy/MM/dd HH:mm:ss";
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern (DATE_TIME_FORMAT);
-    public static final String SERVER_INFO = "JerryMouse (HTTP/1.1 Connector)";
 
     //headers
     public static final String CONTENT_LENGTH = HttpHeaderNames.CONTENT_LENGTH.toString ();
@@ -27,4 +27,7 @@ public final class Constants {
     public static final String APPLICATION_JSON = HttpHeaderValues.APPLICATION_JSON.toString ();
     public static final String LOCATION = HttpHeaderNames.LOCATION.toString ();
     public static final String SET_COOKIE = HttpHeaderNames.SET_COOKIE.toString ();
+    public static final String CONTENT_ENCODING = HttpHeaderNames.CONTENT_ENCODING.toString ();
+    public static final String SERVER = HttpHeaderNames.SERVER.toString ();
+    public static final String DATE = HttpHeaderNames.DATE.toString ();
 }

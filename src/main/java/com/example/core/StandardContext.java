@@ -1,9 +1,6 @@
 package com.example.core;
 
-import com.example.Container;
-import com.example.Context;
-import com.example.Globals;
-import com.example.Wrapper;
+import com.example.*;
 import com.example.connector.Request;
 import com.example.connector.Response;
 import com.example.deploy.ErrorPage;
@@ -39,6 +36,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static com.example.Globals.JERRY_MOUSE_BASE;
 import static com.example.life.EventType.*;
 
 /**
@@ -48,7 +46,6 @@ import static com.example.life.EventType.*;
  */
 @Slf4j
 public final class StandardContext extends AbstractContainer implements Context {
-
 
     private static final String mapperClass = "com.example.mapper.StandardContextMapper";
     private final ReadWriteLock managerLock = new ReentrantReadWriteLock ();
@@ -253,6 +250,7 @@ public final class StandardContext extends AbstractContainer implements Context 
      */
     private String defaultWebXml;
     private boolean webXmlValidation = true;
+    private Boolean failCtxIfServletStartFails;
 
     public StandardContext() {
         getPipeline ().setBasic (new StandardContextValve ());
@@ -508,7 +506,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         if (getResources () == null) {
             log.debug ("Configure FileDirContext Resource.");
             FileDirContext resources = new FileDirContext ();
-            resources.setDocBase (getDocBase ());
+            resources.setDocBase (getBasePath ());
             setResources (resources);
         }
         if (getLoader () == null) {
@@ -542,6 +540,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
             //启动完所有的子组件，就开始检查
             //configured会被监听器设置，所以启动所有的子组件之后，如果configure是false的话，那就启动失败了
+            //ContextConfig会解析web.xml并设置值，如果成功就会设置configure为true
             if (!getConfigured ()) {
                 ok = false;
                 log.error ("configure = false, Context {} starts failed.", getDisplayName ());
@@ -656,12 +655,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         // Create this directory if necessary
         File dir = new File (workDir);
         if (!dir.isAbsolute ()) {
-            String property = System.getProperty ("catalina.base");
-            if (property == null) {
-                property = "E:/TestContext/";
-                log.warn ("catalina.base == null, fallback to {}", property);
-            }
-            File catalinaHome = new File (property);
+            File catalinaHome = new File (JERRY_MOUSE_BASE);
             String catalinaHomePath;
             try {
                 catalinaHomePath = catalinaHome.getCanonicalPath ();
@@ -669,6 +663,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             } catch (IOException ignored) {
             }
         }
+
         dir.mkdirs ();
         log.info ("Context {} 创建工作目录 {}", getDisplayName (), dir.getAbsolutePath ());
 
@@ -831,14 +826,19 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
         }
 
+
         for (List<Wrapper> value : map.values ()) {
             for (Wrapper wrapper : value) {
                 try {
                     wrapper.load ();
                     log.debug ("Context {} init servlet {}", getDisplayName (), wrapper.getServletClass ());
                 } catch (ServletException e) {
-                    log.error ("", e);
-                    return false;
+                    if (getComputedFailCtxIfServletStartFails ()) {
+                        log.error ("wrapper" + wrapper.getServletClass () + "启动异常，终止context启动", e);
+                        return false;
+                    } else {
+                        log.warn ("忽略wrapper" + wrapper.getServletClass () + "启动异常", e);
+                    }
                 }
             }
         }
@@ -1814,6 +1814,73 @@ public final class StandardContext extends AbstractContainer implements Context 
         }
 
         super.invoke (request, response);
+    }
+
+    /**
+     * 由context、host、engine组合出对应的webapp的路径
+     * 默认情况下，host的路径是tomcat根目录下的webapps文件夹
+     */
+    private String getBasePath() {
+        String docBase;
+        Container container = this;
+        while (container != null) {
+            if (container instanceof Host)
+                break;
+            container = container.getParent ();
+        }
+        if (container == null) {
+            //如果没有host，那就用默认的engineBase+docbase
+            docBase = (new File (engineBase (), getDocBase ())).getPath ();
+        } else {
+            //如果找到了host
+            File file = new File (getDocBase ());
+            if (!file.isAbsolute ()) {
+                // Use the "appBase" property of this container
+                String appBase = ((Host) container).getAppBase ();
+                file = new File (appBase);
+                if (!file.isAbsolute ())
+                    file = new File (engineBase (), appBase);
+                docBase = (new File (file, getDocBase ())).getPath ();
+            } else {
+                docBase = file.getPath ();
+            }
+        }
+        return docBase;
+    }
+
+    /**
+     * Return a File object representing the base directory for the
+     * entire servlet container (i.e. the Engine container if present).
+     * engineBase dir就是catalina base了
+     */
+    private File engineBase() {
+        return new File (JERRY_MOUSE_BASE);
+    }
+
+
+    private boolean getComputedFailCtxIfServletStartFails() {
+        if (failCtxIfServletStartFails != null) {
+            return failCtxIfServletStartFails;
+        }
+        //else look at Host config
+        if (getParent () instanceof StandardHost) {
+            return ((StandardHost) getParent ()).isFailCtxIfServletStartFails ();
+        }
+
+        return false;
+    }
+
+    public Boolean getFailCtxIfServletStartFails() {
+        return failCtxIfServletStartFails;
+    }
+
+    public void setFailCtxIfServletStartFails(
+            Boolean failCtxIfServletStartFails) {
+        Boolean oldFailCtxIfServletStartFails = this.failCtxIfServletStartFails;
+        this.failCtxIfServletStartFails = failCtxIfServletStartFails;
+        support.firePropertyChange ("failCtxIfServletStartFails",
+                oldFailCtxIfServletStartFails,
+                failCtxIfServletStartFails);
     }
 
 }

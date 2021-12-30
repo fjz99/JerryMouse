@@ -17,7 +17,6 @@ import io.netty.handler.codec.http.multipart.MemoryAttribute;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
@@ -25,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.example.Globals.SERVER_INFO;
 import static com.example.connector.http.Constants.*;
 
 /**
@@ -38,6 +38,13 @@ public final class HttpProcessor extends LifecycleBase {
      * 用于匹配在query中的session id
      */
     private static final String match = ";" + Globals.SESSION_PARAMETER_NAME + "=";
+    private static final Map<String, String> defaultHeaders = new HashMap<> ();
+
+    static {
+        defaultHeaders.put (CONTENT_TYPE, APPLICATION_JSON);
+        defaultHeaders.put (SERVER, SERVER_INFO);
+        defaultHeaders.put (CONNECTION, KEEP_ALIVE);
+    }
 
     private final StringParser parser = new StringParser ();
     private final HttpConnector connector;
@@ -370,7 +377,6 @@ public final class HttpProcessor extends LifecycleBase {
         response.setRequest (request);
         response.setByteBuf (respBuf);
 
-        setDefaultHeaders ();
 
         log.trace ("prepareResponse后为 {}", request);
     }
@@ -379,13 +385,25 @@ public final class HttpProcessor extends LifecycleBase {
      * 默认的header
      */
     private void setDefaultHeaders() {
-        response.setHeader ("server", SERVER_INFO);
-        response.setHeader ("date", LocalDateTime.now ().format (DATE_TIME_FORMATTER));
-        response.setHeader (CONNECTION, KEEP_ALIVE);
-        response.setHeader (CONTENT_TYPE, APPLICATION_JSON);
+        for (Map.Entry<String, String> e : defaultHeaders.entrySet ()) {
+            if (response.getHeaders (e.getKey ()) == null) {
+                response.setHeader (e.getKey (), e.getValue ());
+            }
+        }
+
+        if (response.getHeaders (DATE) == null) {
+            response.setHeader (DATE, LocalDateTime.now ().format (DATE_TIME_FORMATTER));
+        }
+
+        if (response.getHeaders (CONTENT_LENGTH) == null) {
+            response.setHeader (CONTENT_LENGTH, String.valueOf (respBuf.readableBytes ()));
+        }
+
     }
 
     private void doSend() {
+        setDefaultHeaders ();
+
         fullHttpResponse = new DefaultFullHttpResponse (HttpVersion.HTTP_1_1,
                 HttpResponseStatus.valueOf (response.getStatus ()),
                 respBuf);
@@ -405,9 +423,6 @@ public final class HttpProcessor extends LifecycleBase {
 
             }
         }
-        if (!respHeaders.contains (CONTENT_LENGTH)) {
-            respHeaders.set (CONTENT_LENGTH, respBuf.readableBytes ());
-        }
 
         parseCookieToHeader (respHeaders);
 
@@ -426,8 +441,19 @@ public final class HttpProcessor extends LifecycleBase {
     private void parseCookieToHeader(HttpHeaders respHeaders) {
         //添加session id
         HttpSession session = request.getSession (true);
-        Cookie cookie = new Cookie (Globals.SESSION_COOKIE_NAME, session.getId ());
-        response.addCookie (cookie);
+
+        //如果从host到context映射失败的话，那就根本没有manger，自然就没有session
+        if (session != null) {
+            Cookie cookie = new Cookie (Globals.SESSION_COOKIE_NAME, session.getId ());
+            cookie.setSecure (connector.getSecure ());
+            cookie.setMaxAge (session.getMaxInactiveInterval ());
+            String s = request.getContextPath ();
+            if (!s.startsWith ("/")) {
+                s = "/" + s;
+            }
+            cookie.setPath (s);//session存在说明context存在
+            response.addCookie (cookie);
+        }
 
         StringBuilder builder = new StringBuilder ();
         Cookie[] cookies = response.getCookies ();

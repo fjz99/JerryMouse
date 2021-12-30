@@ -57,6 +57,7 @@ public interface Mapper {
      *
      * @param request Request being processed
      * @param update Update the Request to reflect the mapping selection?
+     *               指明是否要修改request，比如给request设置wrapper或者context等
      */
     Container map(Request request, boolean update);
 

@@ -12,8 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.example.connector.http.Constants.DATE_TIME_FORMAT;
-import static com.example.connector.http.Constants.LOCATION;
+import static com.example.connector.http.Constants.*;
 
 /**
  * 目前只有1.1版本
@@ -385,4 +384,29 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
         status = HttpResponseStatus.OK;
         fullHttpResponse = DEFAULT.copy ();
     }
+
+    @Override
+    public void setContentLength(int len) {
+        super.setContentLength (len);
+        addHeader (CONTENT_LENGTH, String.valueOf (len));
+    }
+
+    @Override
+    public void setContentLengthLong(long len) {
+        super.setContentLengthLong (len);
+        addHeader (CONTENT_LENGTH, String.valueOf (len));
+    }
+
+    @Override
+    public void setContentType(String type) {
+        super.setContentType (type);
+        addHeader (CONTENT_TYPE, type);
+    }
+
+    @Override
+    public void setCharacterEncoding(String charset) {
+        super.setCharacterEncoding (charset);
+        addHeader (CONTENT_ENCODING, charset);
+    }
+
 }
