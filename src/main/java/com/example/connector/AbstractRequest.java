@@ -36,6 +36,8 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     protected int localPort;
     /**
      * ip或header中host的值<br/>
+     * 用于从engine映射到host
+     * 即host组件的名字必须是host的值
      * Returns the host name of the server to which the request was sent.
      * It is the value of the part before ":" in the Host header value,
      * if any, or the resolved server name, or the server IP address.
@@ -49,6 +51,7 @@ public abstract class AbstractRequest implements Request, ServletRequest {
     protected String hostName;
     /**
      * 根据情况，可能返回ip或者hostname
+     * 指的是本地地址
      */
     protected String remoteHost;
     //servlet规范

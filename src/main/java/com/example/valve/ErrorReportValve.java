@@ -4,7 +4,6 @@ import com.example.Globals;
 import com.example.connector.HttpResponse;
 import com.example.connector.Request;
 import com.example.connector.Response;
-import com.example.connector.http.HttpResponseImpl;
 import com.example.util.RequestUtil;
 import lombok.extern.slf4j.Slf4j;
 

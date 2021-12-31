@@ -1,8 +1,14 @@
 package com.example;
 
+import com.google.common.net.InetAddresses;
+import com.sun.javaws.IconUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.conn.util.InetAddressUtils;
 import org.junit.jupiter.api.Test;
+import sun.net.util.IPAddressUtil;
 
+import java.net.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -47,6 +53,17 @@ public class TestSimple {
     @Test
     void testSync() throws InterruptedException {
 //        lock.notifyAll ();
+
+    }
+
+    @Test
+    void testIp() throws UnknownHostException {
+        String c = "0:0:0:0:0:0:0:1";
+        InetAddress byName = Inet6Address.getByName (c);
+        System.out.println (byName.getHostName ());
+
+        InetAddress address = Inet4Address.getByName ("127.0.0.1");
+        System.out.println (address.getHostName ());
     }
 
     interface L {

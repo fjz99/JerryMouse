@@ -8,6 +8,7 @@ import com.example.life.LifecycleBase;
 import com.example.life.LifecycleException;
 import com.example.loader.Loader;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.ServletException;
 import java.beans.PropertyChangeListener;
@@ -29,10 +30,11 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
      * The set of Mappers associated with this Container, keyed by protocol.
      */
     protected final Map<String, Mapper> mappers = new ConcurrentHashMap<> ();
+    protected final List<Container> failures = new ArrayList<> ();
     /**
      * name，唯一id，用在children上
      */
-    protected String name = "NOT_NAMED";
+    protected String name = "";
     protected Pipeline pipeline = new StandardPipeline (this);
     protected Map<String, Container> children = new ConcurrentHashMap<> ();
     protected Container parent;
@@ -52,7 +54,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
     /**
      * -1表示后台线程不会启动（根本不会start这个线程），单位秒
      */
-    private volatile int backgroundProcessorDelay = -1;
+    protected volatile int backgroundProcessorDelay = -1;
     /**
      * 停止线程的标志位
      */
@@ -88,6 +90,10 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
 
     @Override
     public String getName() {
+        if (StringUtils.isEmpty (name)) {
+            throw new IllegalStateException ("每个组件必须设置name");
+        }
+
         return name;
     }
 
@@ -345,9 +351,12 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
     }
 
 
-    //子类根本没用这个start方法
     @Override
     public void start() throws LifecycleException {
+        if (StringUtils.isEmpty (getName ())) {
+            throw new IllegalStateException ("每个组件必须设置name");
+        }
+
         super.start ();
 
         if (pipeline instanceof Lifecycle) {
@@ -379,12 +388,15 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
 
     /**
      * 并行处理子组件的start和stop
+     * 因为是多线程，所以当某个组件启动失败的时候，父组件不会启动失败
      *
      * @param isStop true代表是stop
      */
     private void startStopChildren(final boolean isStop) {
         ExecutorService executor = getStartStopExecutor ();
         List<Future<?>> jobs = new ArrayList<> ();
+        failures.clear ();
+
         for (Container value : children.values ()) {
             Future<?> future = executor.submit (() -> {
                 try {
@@ -393,8 +405,9 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
                     } else {
                         value.start ();
                     }
-                } catch (LifecycleException e) {
-                    log.error ("start " + value.getName () + " 失败", e);
+                } catch (Throwable e) {
+                    log.error ("组件 " + value.getName () + " 启动失败", e);
+                    failures.add (value);
                 }
             });
             jobs.add (future);
@@ -406,6 +419,22 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace ();
             }
+        }
+
+        if (Wrapper.class.isAssignableFrom (getClass ())) {
+            return;
+        }
+
+        if (failures.size () == 0) {
+            log.info ("{} 的子组件全部启动成功", getName ());
+        } else {
+            StringBuilder sb = new StringBuilder ();
+            for (Container failure : failures) {
+                sb.append (failure.getName ()).append (',');
+            }
+            sb.deleteCharAt (sb.length () - 1);
+
+            log.error ("{} 的子组件 {} 启动失败", getName (), sb);
         }
     }
 

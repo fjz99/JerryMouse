@@ -578,6 +578,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
 
             if (ok) {
+                //不设置delay>0就不会启动线程，这样从context或者从host或者从engine启动线程都行
                 super.startThread ();
             }
         } finally {

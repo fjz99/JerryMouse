@@ -20,6 +20,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -356,8 +359,15 @@ public final class HttpProcessor extends LifecycleBase {
                 .map (x -> (InetSocketAddress) x.remoteAddress ())
                 .orElse (null);
         if (inetSocketAddress != null) {
-            request.setRemoteHost (inetSocketAddress.getHostString ());
-            request.setRemoteAddress (inetSocketAddress.getAddress ().getHostAddress ());
+
+            //会dns域名解析，所以可能是域名，也可能是ip
+            //因为http基于tcp基于ip，无法确定域名，只有ip
+            //host组件基于这个
+            String host = checkLocalhost (inetSocketAddress.getAddress ());
+            request.setServerName (host);
+            request.setRemoteHost (host);
+
+            request.setRemoteAddress (inetSocketAddress.getHostString ());//不会dns
             request.setInet (inetSocketAddress.getAddress ());
         }
 
@@ -474,5 +484,14 @@ public final class HttpProcessor extends LifecycleBase {
     private void recycle() {
         request.recycle ();
         response.recycle ();
+    }
+
+    private String checkLocalhost(InetAddress address) {
+        String localhost = "localhost";
+        String hostName = address.getHostName ();
+
+        if (hostName.equals ("127.0.0.1") || hostName.equals ("0:0:0:0:0:0:0:1")) {
+            return localhost;
+        } else return hostName;
     }
 }

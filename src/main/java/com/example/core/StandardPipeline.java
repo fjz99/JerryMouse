@@ -242,6 +242,10 @@ public class StandardPipeline extends LifecycleBase implements Pipeline {
 
     @Override
     public void invoke(Request request, Response response) throws IOException, ServletException {
+        if (getFirst () == null) {
+            throw new IllegalStateException ("pipeline没有任何的valve");
+        }
+
         getFirst ().invoke (request, response);
     }
 }

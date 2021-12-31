@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * @author Remy Maucherat
  */
 @Slf4j
-public class StandardHost extends AbstractContainer implements Host {
+public final class StandardHost extends AbstractContainer implements Host {
 
     private static final String mapperClass = "com.example.mapper.StandardHostMapper";
     /**
@@ -364,6 +364,7 @@ public class StandardHost extends AbstractContainer implements Host {
         addDefaultMapper (mapperClass);
 
         //多线程启动所有的context
+        //顺便启动task thread（如果delay>0）
         super.start ();
 
         log.info ("Host {} started.", getName ());
