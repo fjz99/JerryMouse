@@ -1,21 +1,22 @@
 package com.example.core;
 
+import com.example.Engine;
 import com.example.Host;
+import com.example.Service;
 import com.example.Wrapper;
 import com.example.connector.http.HttpConnector;
 import com.example.life.LifecycleException;
 import com.example.session.FileStore;
 import com.example.session.PersistentManager;
-import com.example.valve.ErrorReportValve;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class StandardHostTest {
+class StandardServiceTest {
     @Test
-    void test() throws LifecycleException, IOException {
+    void runServer() throws LifecycleException, InterruptedException, IOException {
         StandardContext context = new StandardContext ();
         HttpConnector connector = new HttpConnector ();
         connector.setPort (8080);
@@ -49,7 +50,6 @@ class StandardHostTest {
         manager.setMaxIdleBackup (1);
         context.setManager (manager);
         context.setSessionTimeout (1);
-//        context.setBackgroundProcessorDelay (5);
 
         context.addChild (wrapper);
         context.addChild (wrapper2);
@@ -61,14 +61,26 @@ class StandardHostTest {
         context.addServletMapping ("/err", "ERR");
 
         Host host = new StandardHost ();
+        host.setName ("localhost");
         host.addChild (context);
         host.setAppBase ("webapps");//组合！
 
-        connector.setContainer (host);
+        Engine engine = new StandardEngine ();
+        engine.setName ("engine1");
+        engine.addChild (host);
 
+        connector.setContainer (engine);
 
-        host.start ();
-        connector.start ();
+        Service service = new StandardService ();
+        service.setName ("service");
+        service.setContainer (engine);
+        service.addConnector (connector);
+
+        service.start ();
+
         System.in.read ();
+//        Thread.sleep (1000);
+
+        service.stop ();
     }
 }

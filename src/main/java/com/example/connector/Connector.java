@@ -1,6 +1,7 @@
 package com.example.connector;
 
 import com.example.Container;
+import com.example.life.Lifecycle;
 import com.example.life.LifecycleException;
 
 import javax.net.ServerSocketFactory;
@@ -57,7 +58,9 @@ import javax.net.ServerSocketFactory;
  * @version $Revision: 1.12 $ $Date: 2001/12/20 21:25:23 $
  */
 
-public interface Connector {
+public interface Connector extends Lifecycle {
+
+//    void pause();
 
 
     // ------------------------------------------------------------- Properties

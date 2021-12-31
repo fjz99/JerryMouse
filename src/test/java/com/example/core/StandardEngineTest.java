@@ -9,9 +9,11 @@ import com.example.session.FileStore;
 import com.example.session.PersistentManager;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 class StandardEngineTest {
     @Test
-    void runServer() throws LifecycleException {
+    void runServer() throws LifecycleException, IOException {
         StandardContext context = new StandardContext ();
         HttpConnector connector = new HttpConnector ();
         connector.setPort (8080);
@@ -69,6 +71,7 @@ class StandardEngineTest {
 
         engine.start ();
         connector.start ();
+        System.in.read ();
     }
 
 }

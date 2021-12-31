@@ -14,7 +14,7 @@ import java.io.PrintWriter;
 import static org.mockito.Mockito.*;
 
 class HttpConnectorTest {
-    @Test
+//    @Test
     public void test() throws LifecycleException, IOException, ServletException {
         HttpConnector connector = new HttpConnector ();
 

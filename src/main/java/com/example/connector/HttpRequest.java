@@ -2,6 +2,7 @@ package com.example.connector;
 
 
 import com.example.connector.Request;
+import com.example.session.Session;
 
 import javax.servlet.http.Cookie;
 import java.util.Locale;
@@ -16,11 +17,10 @@ import java.util.Map;
  * @author Craig R. McClanahan
  * @version $Revision: 1.5 $ $Date: 2002/03/14 20:57:20 $
  */
-
 public interface HttpRequest extends Request {
 
+    Session getSessionInternal(boolean create);
 
-    // --------------------------------------------------------- Public Methods
 
 
     /**

@@ -73,12 +73,6 @@ public interface Service extends Lifecycle {
      */
     void setParentClassLoader(ClassLoader parent);
 
-    /**
-     * @return the domain under which this container will be / has been
-     * registered.
-     */
-    String getDomain();
-
 
     /**
      * Add a new Connector to the set of defined Connectors, and associate it
@@ -109,14 +103,14 @@ public interface Service extends Lifecycle {
      *
      * @param ex Executor
      */
-    void addExecutor(Executor ex);
+//    void addExecutor(Executor ex);
 
     /**
      * Retrieves all executors
      *
      * @return Executor[]
      */
-    Executor[] findExecutors();
+//    Executor[] findExecutors();
 
     /**
      * Retrieves executor by name, null if not found
@@ -124,17 +118,13 @@ public interface Service extends Lifecycle {
      * @param name String
      * @return Executor
      */
-    Executor getExecutor(String name);
+//    Executor getExecutor(String name);
 
     /**
      * Removes an executor from the service
      *
      * @param ex Executor
      */
-    void removeExecutor(Executor ex);
+//    void removeExecutor(Executor ex);
 
-    /**
-     * @return the mapper associated with this Service.
-     */
-    Mapper getMapper();
 }

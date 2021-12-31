@@ -396,16 +396,16 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
     }
 
     /**
-     * 创建一个会话，注意检查会话超时
+     * 返回的不是facade，而是Session的实现类
      */
     @Override
-    public HttpSession getSession(boolean create) {
+    public Session getSessionInternal(boolean create) {
         if (getContext () == null) {
             return null;
         }
 
         if (session != null && session.isValid ()) {
-            return session.getSession ();
+            return session;
         } else {
             session = null;
         }
@@ -419,7 +419,7 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
             try {
                 session = manager.findSession (requestedSessionId);
                 if (session != null && session.isValid ()) {
-                    return session.getSession ();
+                    return session;
                 } else {
                     session = null;
                 }
@@ -435,10 +435,21 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
 
         session = manager.createSession (requestedSessionId);
         if (session != null) {
-            return session.getSession ();
+            return session;
         } else {
             return null;
         }
+    }
+
+    /**
+     * 创建一个会话，注意检查会话超时
+     */
+    @Override
+    public HttpSession getSession(boolean create) {
+        Session session = getSessionInternal (create);
+        if (session != null) {
+            return session.getSession ();
+        } else return null;
     }
 
     /**

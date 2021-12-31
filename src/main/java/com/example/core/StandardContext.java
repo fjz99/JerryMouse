@@ -1519,13 +1519,13 @@ public final class StandardContext extends AbstractContainer implements Context 
             this.manager = manager;
 
 
-            if (oldManager instanceof Lifecycle) {
+            if (isRunning () && oldManager instanceof Lifecycle) {
                 ((Lifecycle) oldManager).stop ();
             }
 
             manager.setContext (this);
             manager.setSessionMaxAliveTime (getSessionTimeout ());
-            if (manager instanceof Lifecycle) {
+            if (isRunning () && manager instanceof Lifecycle) {
                 ((Lifecycle) manager).start ();
             }
         } catch (LifecycleException e) {
@@ -1682,13 +1682,13 @@ public final class StandardContext extends AbstractContainer implements Context 
         try {
             //stop
             oldLoader = this.loader;
-            if (this.loader instanceof Lifecycle) {
+            if (isRunning () && this.loader instanceof Lifecycle) {
                 ((Lifecycle) this.loader).stop ();
             }
 
             this.loader = loader;
             loader.setContext (this);
-            if (loader instanceof Lifecycle) {
+            if (isRunning () && loader instanceof Lifecycle) {
                 ((Lifecycle) loader).start ();
             }
         } catch (LifecycleException e) {

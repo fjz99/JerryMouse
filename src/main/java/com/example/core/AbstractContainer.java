@@ -174,6 +174,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
         child.setParent (this);
         children.put (child.getName (), child);
 
+        //如果是正在运行就启动，否则就等待一起启动
         if (startChildren && isRunning ()) {
             try {
                 child.start ();
@@ -407,7 +408,9 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
                     }
                 } catch (Throwable e) {
                     log.error ("组件 " + value.getName () + " 启动失败", e);
-                    failures.add (value);
+                    synchronized (failures) {
+                        failures.add (value);
+                    }
                 }
             });
             jobs.add (future);
@@ -425,8 +428,10 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
             return;
         }
 
+        String s = isStop ? "关闭" : "启动";
+
         if (failures.size () == 0) {
-            log.info ("{} 的子组件全部启动成功", getName ());
+            log.info ("{} 的子组件全部{}成功", getName (), s);
         } else {
             StringBuilder sb = new StringBuilder ();
             for (Container failure : failures) {
@@ -434,7 +439,7 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
             }
             sb.deleteCharAt (sb.length () - 1);
 
-            log.error ("{} 的子组件 {} 启动失败", getName (), sb);
+            log.error ("{} 的子组件 {} {}失败", getName (), sb, s);
         }
     }
 

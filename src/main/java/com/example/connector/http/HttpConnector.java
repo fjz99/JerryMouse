@@ -12,6 +12,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.util.AsciiString;
+import io.netty.util.concurrent.ThreadPerTaskExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ import java.util.List;
  */
 @Slf4j
 public class HttpConnector extends LifecycleBase implements Connector {
-    private final String info = "com.example.connector.http.HttpConnector：一个 http connector";
+    private static final String info = "com.example.connector.http.HttpConnector：一个 http connector";
     private final List<HttpProcessor> runningProcessors = new ArrayList<> ();
     private int port = 8080;
     private Container container;
@@ -30,6 +31,7 @@ public class HttpConnector extends LifecycleBase implements Connector {
     private boolean secure = false;
     private ChannelFuture future;
     private NioEventLoopGroup group;
+    private Thread thread;
 
     public Container getContainer() {
         return container;
@@ -41,7 +43,7 @@ public class HttpConnector extends LifecycleBase implements Connector {
     }
 
     /**
-     * 目前端口等是写死的
+     * 同步的，启动后会阻塞住
      */
     public synchronized void start() throws LifecycleException {
         super.start ();
@@ -68,11 +70,17 @@ public class HttpConnector extends LifecycleBase implements Connector {
                 .childOption (ChannelOption.SO_KEEPALIVE, Boolean.TRUE);
         try {
             future = b.bind (port).sync ();
-            future.channel ().closeFuture ().sync (); // 例子里没有这行代码 会导致服务器直接退出
+            //异步等待关闭
+            future.channel ().closeFuture ();
         } catch (InterruptedException e) {
-            e.printStackTrace ();
-            log.error ("err shutdown");
+            log.error (this + " err shutdown", e);
         }
+        log.info (this + " 启动完成");
+    }
+
+    @Override
+    public String toString() {
+        return String.format ("Connector[%s-%s]", scheme, port);
     }
 
     @Override
@@ -88,7 +96,9 @@ public class HttpConnector extends LifecycleBase implements Connector {
         for (HttpProcessor runningProcessor : processors) {
             runningProcessor.stop ();
         }
-        log.error ("connector shutdown");
+
+        thread = null;
+        log.info ("{} shutdown", this);
     }
 
     public void removeProcessor(HttpProcessor processor) {

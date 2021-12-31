@@ -99,7 +99,7 @@ class StandardContextTest {
      * servlet等
      */
     @Test
-    void runServer() throws LifecycleException {
+    void runServer() throws LifecycleException, IOException {
         StandardContext context = new StandardContext ();
         HttpConnector connector = new HttpConnector ();
         connector.setPort (8080);
@@ -149,6 +149,7 @@ class StandardContextTest {
 
         context.start ();
         connector.start ();
+        System.in.read ();
     }
 
     static class Listener implements LifecycleListener {

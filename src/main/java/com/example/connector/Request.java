@@ -23,11 +23,7 @@ import java.util.Map;
  * @author Craig R. McClanahan
  * @version $Revision: 1.5 $ $Date: 2001/08/01 03:04:04 $
  */
-
 public interface Request {
-
-
-    // ------------------------------------------------------------- Properties
 
 
     /**
