@@ -29,33 +29,11 @@ import java.io.File;
  */
 public interface Server extends Lifecycle {
 
-    // ------------------------------------------------------------- Properties
-
-    /**
-     * @return the global naming resources.
-     */
-//    public NamingResourcesImpl getGlobalNamingResources();
-
-
-    /**
-     * Set the global naming resources.
-     *
-     * @param globalNamingResources The new global naming resources
-     */
-//    public void setGlobalNamingResources
-//        (NamingResourcesImpl globalNamingResources);
-
-
-    /**
-     * @return the global naming resources context.
-     */
-    javax.naming.Context getGlobalNamingContext();
-
 
     /**
      * @return the port number we listen to for shutdown commands.
      */
-    int getPort();
+//    int getPort();
 
 
     /**
@@ -63,13 +41,13 @@ public interface Server extends Lifecycle {
      *
      * @param port The new port number
      */
-    void setPort(int port);
+//    void setPort(int port);
 
 
     /**
      * @return the address on which we listen to for shutdown commands.
      */
-    String getAddress();
+//    String getAddress();
 
 
     /**
@@ -77,13 +55,13 @@ public interface Server extends Lifecycle {
      *
      * @param address The new address
      */
-    void setAddress(String address);
+//    void setAddress(String address);
 
 
     /**
      * @return the shutdown command string we are waiting for.
      */
-    String getShutdown();
+//    String getShutdown();
 
 
     /**
@@ -91,7 +69,7 @@ public interface Server extends Lifecycle {
      *
      * @param shutdown The new shutdown command
      */
-    void setShutdown(String shutdown);
+//    void setShutdown(String shutdown);
 
 
     /**
@@ -191,10 +169,4 @@ public interface Server extends Lifecycle {
      */
     void removeService(Service service);
 
-
-    /**
-     * @return the token necessary for operations on the associated JNDI naming
-     * context.
-     */
-    Object getNamingToken();
 }
