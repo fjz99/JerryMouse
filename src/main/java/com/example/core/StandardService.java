@@ -8,7 +8,6 @@ import com.example.life.LifecycleBase;
 import com.example.life.LifecycleException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.checkerframework.checker.units.qual.C;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;

@@ -29,9 +29,8 @@ public class HttpConnector extends LifecycleBase implements Connector {
     private Container container;
     private String scheme = "http";
     private boolean secure = false;
-    private ChannelFuture future;
     private NioEventLoopGroup group;
-    private Thread thread;
+
 
     public Container getContainer() {
         return container;
@@ -69,9 +68,9 @@ public class HttpConnector extends LifecycleBase implements Connector {
                 .option (ChannelOption.SO_BACKLOG, 128) // determining the number of connections queued
                 .childOption (ChannelOption.SO_KEEPALIVE, Boolean.TRUE);
         try {
-            future = b.bind (port).sync ();
-            //异步等待关闭
-            future.channel ().closeFuture ();
+            //等待端口绑定
+            b.bind (port).sync ();
+            //异步启动
         } catch (InterruptedException e) {
             log.error (this + " err shutdown", e);
         }
@@ -97,7 +96,6 @@ public class HttpConnector extends LifecycleBase implements Connector {
             runningProcessor.stop ();
         }
 
-        thread = null;
         log.info ("{} shutdown", this);
     }
 

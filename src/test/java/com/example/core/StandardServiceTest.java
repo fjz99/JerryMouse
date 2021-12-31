@@ -78,7 +78,7 @@ class StandardServiceTest {
 
         service.start ();
 
-        System.in.read ();
+//        System.in.read ();
 //        Thread.sleep (1000);
 
         service.stop ();
