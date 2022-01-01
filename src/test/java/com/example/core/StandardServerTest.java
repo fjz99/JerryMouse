@@ -34,7 +34,7 @@ class StandardServerTest {
         wrapper4.setName ("ERR");
         wrapper4.setServletClass ("com.example.servlet.ExceptionServlet");
 
-        context.setDocBase ("testContext");
+        context.setDocBase ("/testContext");
         context.setWorkDir ("/workdir");//和docbase不同
         context.setDisplayName ("Test");
         context.setPath ("/test");

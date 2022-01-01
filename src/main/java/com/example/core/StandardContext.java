@@ -492,6 +492,9 @@ public final class StandardContext extends AbstractContainer implements Context 
      */
     @Override
     public synchronized void start() throws LifecycleException {
+//        if(StringUtils.isEmpty (getName ())){
+//            throw new IllegalStateException ("name不能为空");
+//        }
         verifyStopped ();
         fireLifecycleEvent (BEFORE_START_EVENT, this);
 
