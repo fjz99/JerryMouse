@@ -1,6 +1,7 @@
 package com.example.connector.http;
 
 import com.example.Container;
+import com.example.Service;
 import com.example.connector.Connector;
 import com.example.connector.Request;
 import com.example.connector.Response;
@@ -30,7 +31,26 @@ public class HttpConnector extends LifecycleBase implements Connector {
     private String scheme = "http";
     private boolean secure = false;
     private NioEventLoopGroup group;
+    private Service service;//为了使server.xml解析正确执行
 
+    public Service getService() {
+        return service;
+    }
+
+    public void setService(Service service) {
+        this.service = service;
+    }
+
+    //为了使server.xml解析正确执行
+    public Container getContainerInternal() {
+        if (container != null) {
+            return container;
+        }
+        if (service != null) {
+            return service.getContainer ();
+        }
+        return null;
+    }
 
     public Container getContainer() {
         return container;

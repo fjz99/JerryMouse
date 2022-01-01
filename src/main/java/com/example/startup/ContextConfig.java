@@ -14,8 +14,9 @@ import com.example.resource.AbstractContext;
 import com.example.resource.FileDirContext;
 import com.example.startup.rule.TldRuleSet;
 import com.example.startup.rule.WebRuleSet;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.digester.Digester;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXParseException;
 
@@ -32,8 +33,11 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 
-@Slf4j
 public final class ContextConfig implements LifecycleListener {
+
+//    private static final Logger log = LoggerFactory.getLogger (Constants.ParserLogName);
+
+    private static final Logger log = LoggerFactory.getLogger (ContextConfig.class);
 
     /**
      * The <code>Digester</code> we will use to process tag library
@@ -53,7 +57,6 @@ public final class ContextConfig implements LifecycleListener {
      * Track any fatal errors during startup configuration processing.
      */
     private boolean ok = false;
-
 
 
     /**
@@ -119,6 +122,7 @@ public final class ContextConfig implements LifecycleListener {
         if (servletContext != null)
             stream = servletContext.getResourceAsStream (Constants.ApplicationWebXml);
         if (stream == null) {
+//            standardLog.debug ("contextConfig.applicationMissing");
             log.debug ("contextConfig.applicationMissing");
             return;
         }

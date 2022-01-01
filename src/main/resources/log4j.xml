@@ -79,6 +79,16 @@
         </layout>
     </appender>
 
+    <appender name="parserLog" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="log/xmlParser.log"/>
+        <param name="Append" value="true"/>
+        <param name="MaxFileSize" value="10MB"/>
+        <param name="MaxBackupIndex" value="2"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%p [%t][%d{HH:mm:ss SSS}] [method:%l]%n%m%n"/>
+        </layout>
+    </appender>
+
 
     <!--
         1. 指定logger的设置，additivity是否遵循缺省的继承机制
@@ -94,6 +104,16 @@
     <!--类加载器logger,只报告类加载失败等-->
     <logger name="com.example.loader" additivity="false">
         <level value="WARN"/>
+        <appender-ref ref="loaderLog"/>
+    </logger>
+
+<!--    xml 解析的log-->
+    <logger name="xmlParser" additivity="false">
+        <level value="TRACE"/>
+        <appender-ref ref="loaderLog"/>
+    </logger>
+    <logger name="com.example.startup.rule" additivity="false">
+        <level value="TRACE"/>
         <appender-ref ref="loaderLog"/>
     </logger>
 

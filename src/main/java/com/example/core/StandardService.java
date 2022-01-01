@@ -4,6 +4,7 @@ import com.example.Engine;
 import com.example.Server;
 import com.example.Service;
 import com.example.connector.Connector;
+import com.example.connector.http.HttpConnector;
 import com.example.life.LifecycleBase;
 import com.example.life.LifecycleException;
 import lombok.extern.slf4j.Slf4j;
@@ -100,6 +101,9 @@ public final class StandardService extends LifecycleBase implements Service {
 
         synchronized (connectors) {
             connectors.add (connector);
+            if (connector instanceof HttpConnector) {
+                ((HttpConnector) connector).setService (this);
+            }
             connector.setContainer (this.getContainer ());
 
             if (isRunning ()) {

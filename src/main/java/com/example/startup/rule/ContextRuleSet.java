@@ -2,6 +2,8 @@ package com.example.startup.rule;
 
 import com.example.Container;
 import com.example.loader.Loader;
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.digester.Digester;
 import org.apache.commons.digester.Rule;
 import org.apache.commons.digester.RuleSetBase;
@@ -18,6 +20,7 @@ import java.lang.reflect.Constructor;
  * @author Craig R. McClanahan
  * @version $Revision: 1.3 $ $Date: 2001/11/08 21:03:15 $
  */
+@Slf4j
 public class ContextRuleSet extends RuleSetBase {
 
     /**
@@ -173,7 +176,7 @@ public class ContextRuleSet extends RuleSetBase {
  * class loader associated with the top object on the stack (which must be
  * a <code>Container</code>), and pushes it on to the stack.
  */
-
+@Slf4j
 final class CreateLoaderRule extends Rule {
 
     private final String attributeName;
