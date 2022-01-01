@@ -1,4 +1,4 @@
-package com.example.startup;
+package com.example.startup.rule;
 
 
 import org.apache.commons.digester.Digester;

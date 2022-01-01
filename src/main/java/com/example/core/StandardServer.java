@@ -14,7 +14,9 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * TODO socket关闭支持
+ */
 @Slf4j
 public final class StandardServer extends LifecycleBase implements Server {
 

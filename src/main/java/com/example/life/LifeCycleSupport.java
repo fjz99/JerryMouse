@@ -23,6 +23,10 @@ public final class LifeCycleSupport {
 
 
     public void addLifecycleListener(LifecycleListener listener) {
+        if (listeners.contains (listener)) {
+            throw new IllegalArgumentException ();
+        }
+
         listeners.add (listener);
     }
 

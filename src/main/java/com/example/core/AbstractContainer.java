@@ -90,9 +90,9 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
 
     @Override
     public String getName() {
-        if (StringUtils.isEmpty (name)) {
-            throw new IllegalStateException ("每个组件必须设置name");
-        }
+//        if (StringUtils.isEmpty (name)) {
+//            throw new IllegalStateException ("每个组件必须设置name");
+//        }
 
         return name;
     }

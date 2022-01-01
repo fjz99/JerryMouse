@@ -100,6 +100,7 @@ public final class StandardService extends LifecycleBase implements Service {
 
         synchronized (connectors) {
             connectors.add (connector);
+            connector.setContainer (this.getContainer ());
 
             if (isRunning ()) {
                 try {

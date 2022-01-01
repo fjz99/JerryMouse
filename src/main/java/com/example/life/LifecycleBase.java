@@ -24,6 +24,10 @@ public abstract class LifecycleBase implements Lifecycle {
     protected volatile boolean running = false;
 
     public void addLifecycleListener(LifecycleListener listener) {
+        if (listeners.contains (listener)) {
+            throw new IllegalArgumentException ();
+        }
+
         listeners.add (listener);
     }
 

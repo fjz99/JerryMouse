@@ -1,4 +1,4 @@
-package com.example.startup;
+package com.example.startup.rule;
 
 
 import com.example.Context;

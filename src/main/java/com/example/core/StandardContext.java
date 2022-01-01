@@ -528,6 +528,16 @@ public final class StandardContext extends AbstractContainer implements Context 
             unbind (bind);
 
             bind = bind (null);
+            fireLifecycleEvent (START_EVENT, this);
+            //启动完Loader，就开始检查
+            //configured会被监听器设置，所以启动所有的子组件之后，如果configure是false的话，那就启动失败了
+            //ContextConfig会解析web.xml并设置值，如果成功就会设置configure为true
+            //因为wrapper也在监听器中设置，所以要早点触发监听器
+            if (!getConfigured ()) {
+                ok = false;
+                log.error ("configure = false, Context {} starts failed.", getDisplayName ());
+            }
+
             for (Container child : findChildren ()) {
                 if (!child.isRunning ()) {
                     child.start ();
@@ -539,15 +549,6 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
 
             addDefaultMapper (mapperClass);
-            fireLifecycleEvent (START_EVENT, this);
-
-            //启动完所有的子组件，就开始检查
-            //configured会被监听器设置，所以启动所有的子组件之后，如果configure是false的话，那就启动失败了
-            //ContextConfig会解析web.xml并设置值，如果成功就会设置configure为true
-            if (!getConfigured ()) {
-                ok = false;
-                log.error ("configure = false, Context {} starts failed.", getDisplayName ());
-            }
 
             if (getManager () == null) {
                 setManager (new StandardManager ());//set的时候会start
@@ -556,21 +557,22 @@ public final class StandardContext extends AbstractContainer implements Context 
             if (ok) {
                 getServletContext ().setAttribute (Globals.RESOURCES_ATTR, getResources ());
                 getServletContext ().setAttribute (Globals.WEBAPP_VERSION, getWebappVersion ());
-            }
 
-            setParameters ();
+                setParameters ();
 
-            for (Map.Entry<ServletContainerInitializer, Set<Class<?>>> entry :
-                    initializers.entrySet ()) {
-                try {
-                    entry.getKey ().onStartup (entry.getValue (),
-                            getServletContext ());
-                } catch (ServletException e) {
-                    log.error ("standardContext.ServletContainerInitializerFail", e);
-                    ok = false;
-                    break;
+                for (Map.Entry<ServletContainerInitializer, Set<Class<?>>> entry :
+                        initializers.entrySet ()) {
+                    try {
+                        entry.getKey ().onStartup (entry.getValue (),
+                                getServletContext ());
+                    } catch (ServletException e) {
+                        log.error ("standardContext.ServletContainerInitializerFail", e);
+                        ok = false;
+                        break;
+                    }
                 }
             }
+
 
             ok = ok && loadOnStartUp (findChildren ());
             ok = ok && startListeners () && startFilters ();
@@ -595,10 +597,11 @@ public final class StandardContext extends AbstractContainer implements Context 
             setAvailable (false);
             try {
                 stop ();
-            } catch (Throwable e) {
-                log.error ("", e);
+            } catch (Throwable ignored) {
+
             }
             log.error ("Context {} started failed.", getDisplayName ());
+            throw new LifecycleException ("start failed");
         }
 
         fireLifecycleEvent (AFTER_START_EVENT, this);

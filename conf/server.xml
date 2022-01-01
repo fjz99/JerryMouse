@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Server className="com.example.core.StandardServer">
+    <Service className="com.example.core.StandardService" name="service">
+        <Connector className="com.example.connector.http.HttpConnector" scheme="http" port="8080" secure="false">
+        </Connector>
+        <Engine className="com.example.core.StandardEngine" backgroundProcessorDelay="10" startStopThreads="0"
+                name="engine1">
+            <Host className="com.example.core.StandardHost" errorReportValveClass="com.example.valve.ErrorReportValve"
+                  backgroundProcessorDelay="-1" contextClass="com.example.core.StandardContext" deployXML="true"
+                  deployOnStartup="true" unpackWARs="true" configClass="null" startStopThreads="0" autoDeploy="true"
+                  appBase="webapps" createDirs="true" name="localhost" failCtxIfServletStartFails="false">
+                <Context className="com.example.core.StandardContext" paused="false" resourceOnlyServlets=""
+                         available="true" path="/test" useHttpOnly="true" configured="true" ignoreAnnotations="false"
+                         createUploadTargets="false" xmlValidation="true" name="Context" sessionTimeout="30"
+                         unpackWAR="true" docBase="/testContext" sendRedirectBody="false" displayName="Context"
+                         reloadable="false" backgroundProcessorDelay="-1" webappVersion="" cookies="true"
+                         wrapperClass="com.example.core.StandardWrapper" override="false"
+                         workDir="work\engine1\localhost\test" allowCasualMultipartParsing="false" startStopThreads="0"
+                         validateClientProvidedNewSessionId="true">
+<!--                    <Listener className="com.example.startup.ContextConfig"/>-->
+                    <Loader className="com.example.loader.WebappLoader" delegate="false"
+                            loaderClass="com.example.loader.WebappClassLoader" reloadable="false"/>
+                    <Manager className="com.example.session.StandardManager" secureRandomAlgorithm="SHA1PRNG"
+                             fileName="cache.session" processExpiresFrequency="6" maxActiveSessions="-1"
+                             sessionMaxAliveTime="30" maxActive="0">
+                    </Manager>
+                </Context>
+            </Host>
+        </Engine>
+    </Service>
+</Server>
