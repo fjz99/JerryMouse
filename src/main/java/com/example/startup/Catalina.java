@@ -2,12 +2,10 @@ package com.example.startup;
 
 import com.example.Container;
 import com.example.Server;
-import com.example.life.Lifecycle;
 import com.example.life.LifecycleException;
 import com.example.startup.rule.ContextRuleSet;
 import com.example.startup.rule.EngineRuleSet;
 import com.example.startup.rule.HostRuleSet;
-import com.example.startup.rule.NamingRuleSet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.digester.Digester;
 import org.apache.commons.digester.Rule;
@@ -16,10 +14,6 @@ import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.security.Security;
 
 /**
  * 负责解析server.xml并启动server
@@ -40,6 +34,16 @@ public class Catalina {
 
     public static void main(String[] args) {
         new Catalina ().process (args);
+    }
+
+    public Server getServer() {
+        return server;
+    }
+
+    public void setServer(Server server) {
+
+        this.server = server;
+
     }
 
     public void process(String[] args) {
@@ -91,18 +95,8 @@ public class Catalina {
     }
 
     public void setParentClassLoader(ClassLoader parentClassLoader) {
-
         this.parentClassLoader = parentClassLoader;
-
     }
-
-
-    public void setServer(Server server) {
-
-        this.server = server;
-
-    }
-
 
     /**
      * Set the <code>catalina.home</code> System property to the current
@@ -115,7 +109,7 @@ public class Catalina {
                 System.getProperty ("user.dir"));
     }
 
-    protected void start() {
+    public void start() {
         Digester digester = createStartDigester ();
         File file = configFile ();
         try {
@@ -181,7 +175,7 @@ public class Catalina {
      * 这样就会从await方法中返回
      * TODO
      */
-    protected void stop() {
+    public void stop() {
         Digester digester = createStopDigester ();
         File file = configFile ();
         try {

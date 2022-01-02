@@ -67,6 +67,9 @@ public class WebappClassLoader
     /**
      * delegate代表是否遵循双亲委派还是破坏双亲委派
      * 破坏双亲委派的话，就是自己加载，如果自己加载不了，才让父类加载器加载
+     * 默认不是双亲委派！根据servlet标准
+     * 因为如果是双亲委派的话，共享类库永远无法被覆盖！！！！
+     * 比如share class loader加载的类
      */
     protected volatile boolean delegate = false;
     /**
@@ -595,6 +598,7 @@ public class WebappClassLoader
         }
 
         //委托给system classloader，避免覆盖它加载的类
+        //假如不是双亲委派（servlet规范规定的情况），这样做可以防止java.lang.Object等类被覆盖
         try {
             clazz = systemClassLoader.loadClass (name);
             if (clazz != null) {

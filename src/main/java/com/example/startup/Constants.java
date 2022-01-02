@@ -1,14 +1,23 @@
 package com.example.startup;
 
 
-/**
- * String constants for the startup package.
- *
- * @author Craig R. McClanahan
- * @version $Revision: 1.5 $ $Date: 2001/07/22 20:25:13 $
- */
-
 public final class Constants {
+
+    /**
+     * Name of the system property containing
+     * the tomcat product installation path
+     */
+    public static final String CATALINA_HOME_PROP = "catalina.home";
+    /**
+     * Name of the system property containing
+     * the tomcat instance installation path
+     */
+    public static final String CATALINA_BASE_PROP = "catalina.base";
+
+    public static final String ApplicationContextXml = "META-INF/context.xml";
+    public static final String DefaultContextXml = "conf/context.xml";
+    public static final String HostContextXml = "context.xml.default";
+
     public static final String ParserLogName = "xmlParser";
 
     public static final String ApplicationWebXml = "/WEB-INF/web.xml";

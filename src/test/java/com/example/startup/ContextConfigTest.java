@@ -56,7 +56,7 @@ class ContextConfigTest {
         server.start ();
 
 //        server.store ("/server.xml");
-        server.await ();
+//        server.await ();
 
 //        System.in.read ();
 //        Thread.sleep (1000);
