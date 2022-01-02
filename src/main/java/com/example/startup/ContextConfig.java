@@ -316,7 +316,6 @@ public final class ContextConfig implements LifecycleListener {
      */
     private void defaultConfig() {
 
-        // Open the default web.xml file, if it exists
         File file = new File (Constants.DefaultWebXml);
         if (!file.isAbsolute ())
             file = new File (System.getProperty ("catalina.base"), Constants.DefaultWebXml);
@@ -501,6 +500,7 @@ public final class ContextConfig implements LifecycleListener {
     /**
      * Scan for and configure all tag library descriptors found in this
      * web application.
+     * 给loader添加repo
      *
      * @throws Exception if a fatal input/output or parsing error occurs
      */
@@ -628,6 +628,7 @@ public final class ContextConfig implements LifecycleListener {
      * the context-relative path to either a tag library descriptor file,
      * or to a JAR file that may contain tag library descriptors in its
      * <code>META-INF</code> subdirectory.
+     * 给loader添加repo
      */
     private Set<String> tldScanResourcePaths() {
         log.debug (" Accumulating TLD resource paths");

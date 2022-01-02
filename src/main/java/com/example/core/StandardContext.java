@@ -488,7 +488,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     /**
      * 先是loader、再是child container、再是pipeline
      * 启动完子组件之后，检查configure标志位，如果没问题，那就启动filter和manager和listener
-     * 如果启动失败，那就stop(?)
+     * 如果启动失败，那就stop
      */
     @Override
     public synchronized void start() throws LifecycleException {
@@ -531,7 +531,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             fireLifecycleEvent (START_EVENT, this);
             //启动完Loader，就开始检查
             //configured会被监听器设置，所以启动所有的子组件之后，如果configure是false的话，那就启动失败了
-            //ContextConfig会解析web.xml并设置值，如果成功就会设置configure为true
+            //ContextConfig会解析web.xml并设置值，还会解析conf/web.xml，还会给loader添加repo，如果成功就会设置configure为true
             //因为wrapper也在监听器中设置，所以要早点触发监听器
             if (!getConfigured ()) {
                 ok = false;
