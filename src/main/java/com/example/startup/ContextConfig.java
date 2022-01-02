@@ -312,6 +312,7 @@ public final class ContextConfig implements LifecycleListener {
 
     /**
      * Process the default configuration file, if it exists.
+     * 解析默认配置文件,conf/web.xml
      */
     private void defaultConfig() {
 
@@ -373,18 +374,18 @@ public final class ContextConfig implements LifecycleListener {
         ok = true;
 
         // Process the default and application web.xml files
-//        defaultConfig ();
+        defaultConfig ();
         applicationConfig ();
 
         // Scan tag library descriptor files for additional listener classes
-//        if (ok) {
-//            try {
-//                tldScan ();
-//            } catch (Exception e) {
-//                log.error (e.getMessage (), e);
-//                ok = false;
-//            }
-//        }
+        if (ok) {
+            try {
+                tldScan ();
+            } catch (Exception e) {
+                log.error (e.getMessage (), e);
+                ok = false;
+            }
+        }
 
         // Configure a certificates exposer valve, if required
 //        if (ok)

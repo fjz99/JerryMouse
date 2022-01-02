@@ -1,13 +1,10 @@
 package com.example.startup;
 
-import static com.example.util.ClassLoaderFactory.*;
-
 import com.example.util.ClassLoaderFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -15,6 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.example.util.ClassLoaderFactory.Repository;
+import static com.example.util.ClassLoaderFactory.RepositoryType;
 
 @Slf4j
 public final class Bootstrap {

@@ -107,6 +107,17 @@ public final class StandardWrapper extends AbstractContainer implements Wrapper,
                 oldLoadOnStartup, this.loadOnStartup);
     }
 
+    /**
+     * 为了兼容web.xml解析
+     */
+    public void setLoadOnStartupString(String value) {
+        try {
+            setLoadOnStartup (Integer.parseInt (value));
+        } catch (NumberFormatException e) {
+            setLoadOnStartup (0);
+        }
+    }
+
     @Override
     public String getRunAs() {
         return runAs;
