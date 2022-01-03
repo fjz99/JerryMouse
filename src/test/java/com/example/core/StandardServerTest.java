@@ -36,7 +36,7 @@ class StandardServerTest {
 
         context.setDocBase ("/testContext");
         context.setWorkDir ("/workdir");//和docbase不同
-        context.setDisplayName ("Test");
+        context.setName ("Test");
         context.setPath ("/test");
         context.addLifecycleListener (new StandardContextTest.Listener ());
         PersistentManager manager = new PersistentManager ();
@@ -78,8 +78,8 @@ class StandardServerTest {
 
         server.start ();
 
-        server.store ("/server.xml");
-//        server.await ();
+//        server.store ("/server.xml");
+        server.await ();
 
 //        System.in.read ();
 //        Thread.sleep (1000);

@@ -1,12 +1,15 @@
 package com.example.startup;
 
+import com.example.Container;
 import com.example.Context;
 import com.example.Host;
 import com.example.core.StandardContext;
 import com.example.core.StandardHost;
 import com.example.life.EventType;
 import com.example.life.LifecycleEvent;
+import com.example.life.LifecycleException;
 import com.example.life.LifecycleListener;
+import com.example.util.ExpandWar;
 import com.example.util.UriUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,6 +29,7 @@ import java.util.jar.JarFile;
 
 /**
  * 用于部署web app
+ * deployed key == app.name == context name
  */
 @Slf4j
 public class HostConfig implements LifecycleListener {
@@ -59,7 +63,7 @@ public class HostConfig implements LifecycleListener {
     /**
      * The Host we are associated with.
      */
-    protected Host host = null;
+    protected Host host;
     /**
      * Should we deploy XML Context config files packaged with WAR files and
      * directories?
@@ -147,9 +151,8 @@ public class HostConfig implements LifecycleListener {
             return;
         }
 
-        // Process the event that has occurred
         if (event.getType ().equals (EventType.PERIODIC_EVENT)) {
-//            check ();
+            check ();
         } else if (event.getType ().equals (EventType.BEFORE_START_EVENT)) {
             beforeStart ();
         } else if (event.getType ().equals (EventType.START_EVENT)) {
@@ -186,21 +189,6 @@ public class HostConfig implements LifecycleListener {
         }
     }
 
-    /**
-     * Add a serviced application to the list and indicates if the application
-     * was already present in the list.
-     *
-     * @param name the context name
-     * @return {@code true} if the application was not already in the list
-     */
-    public boolean tryAddServiced(String name) {
-        return servicedSet.add (name);
-    }
-
-
-    public void removeServiced(String name) {
-        servicedSet.remove (name);
-    }
 
     /**
      * Get the instant where an application was deployed.
@@ -272,7 +260,7 @@ public class HostConfig implements LifecycleListener {
 //        部署Context.xml，即给context添加valve等
 //        TODO
 //        deployDescriptors (configBase, configBase.list ());
-//        deployWARs (appBase, filteredAppPaths);
+        deployWARs (appBase, filteredAppPaths);
         deployDirectories (appBase, filteredAppPaths);
     }
 
@@ -289,8 +277,9 @@ public class HostConfig implements LifecycleListener {
         log.info ("Host {} 开始deploy {}", host.getName (), dir.getAbsolutePath ());
 
         File xml = new File (dir, Constants.ApplicationContextXml);
+        File webXml = new File (host.getAppBaseFile (),
+                contextName.getDocBase () + "/" + Constants.ApplicationWebXml);
         Context context;
-        DeployedApplication deployedApp;
         if (xml.exists () && deployXML) {
             //解析
             synchronized (digesterLock) {
@@ -304,10 +293,10 @@ public class HostConfig implements LifecycleListener {
                 }
             }
         } else if (xml.exists () && !deployXML) {
-            log.error ("部署 {} 时配置文件 {} 不存在", dir.getAbsolutePath (), xml.getAbsolutePath ());
+            log.error ("部署 {} 时配置文件 {} 存在，但是deployXML=false", dir.getAbsolutePath (), xml.getAbsolutePath ());
             return;
         } else {
-            //如果文件不存在，就创建一个空的
+            //如果文件不存在或者deployXML=false（忽略xml文件），就创建一个空的
             context = (Context) Class.forName (contextClass).getConstructor ().newInstance ();
         }
 
@@ -318,8 +307,13 @@ public class HostConfig implements LifecycleListener {
 
         //添加context
         contextName.setContextDefaultName (context, false, dir);
-        context.setParent (host);
+//        context.setParent (host);
         //add child的时候自动start,同步启动
+        if (host.findChild (context.getName ()) != null) {
+            log.warn ("{} 已存在，放弃部署", context.getName ());
+            return;
+        }
+
         host.addChild (context);
 
         if (!context.isAvailable ()) {
@@ -327,16 +321,19 @@ public class HostConfig implements LifecycleListener {
             return;
         }
 
-        //添加监听的资源
-        deployedApp = new DeployedApplication (contextName.getName (), false);
+        //添加监听的资源,用path
+        DeployedApplication deployedApp = new DeployedApplication (context.getName (), false);
         //也监控war，万一新的同名war被添加了
+        //简单处理
         deployedApp.redeployResources.put (dir.getAbsolutePath () + ".war", 0L);//war
         deployedApp.redeployResources.put (dir.getAbsolutePath (), dir.lastModified ());//文件夹
         if (deployXML) {
             deployedApp.redeployResources.put (xml.getAbsolutePath (), xml.lastModified ());//context.xml
         }
+        //监听web.xml
+        deployedApp.reloadResources.put (webXml.getAbsolutePath (), webXml.lastModified ());
 
-        deployed.put (contextName.getName (), deployedApp);
+        deployed.put (context.getName (), deployedApp);//数组使用path
         log.info ("Host {} deploy {} 成功", host.getName (), dir.getAbsolutePath ());
     }
 
@@ -351,14 +348,14 @@ public class HostConfig implements LifecycleListener {
      * @param contextName The context name，其实就是war包文件的名字。。
      * @param war         The WAR file
      */
-    protected void deployWAR(ContextName contextName, File war)
-            throws MalformedURLException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            InstantiationException, IllegalAccessException {
+    protected void deployWAR(ContextName contextName, File war) throws Exception {
         log.info ("Host {} 开始部署war {} ", host.getName (), war.getAbsolutePath ());
 
         //因为可能war和dir都存在。。
         File xmlInDir = new File (host.getAppBaseFile (),
                 contextName.getDocBase () + "/" + Constants.ApplicationContextXml);
+        File webXml = new File (host.getAppBaseFile (),
+                contextName.getDocBase () + "/" + Constants.ApplicationWebXml);
 
         boolean xmlInWar = false;
         try (JarFile jar = new JarFile (war)) {
@@ -372,8 +369,22 @@ public class HostConfig implements LifecycleListener {
         }
 
         Context context = null;
-        DeployedApplication deployedApp = new DeployedApplication (contextName.getName (), false);
-        if (deployXML && xmlInWar) {
+        //假如文件夹和war都存在，而且这个context还没有部署过，说明用户复制的war懒得删除了
+        //此时优先文件夹
+        if (deployXML && xmlInDir.exists ()) {
+            synchronized (digesterLock) {
+                try {
+                    context = (Context) digester.parse (xmlInDir);
+                } catch (Exception e) {
+                    log.error ("xml解析失败", e);
+                } finally {
+                    digester = createDigester (contextClass);//??
+                }
+            }
+            if (context != null) {
+                context.setConfigFile (xmlInDir.toURI ().toURL ());
+            }
+        } else if (deployXML && xmlInWar) {
             synchronized (digesterLock) {
                 try (JarFile jar = new JarFile (war)) {
                     JarEntry entry = jar.getJarEntry (Constants.ApplicationContextXml);
@@ -391,10 +402,10 @@ public class HostConfig implements LifecycleListener {
                 }
             }
         } else if (!deployXML && xmlInWar) {
-            log.error ("部署 {} 时配置文件context.xml不在war{}中", contextName.getName (), war.getAbsolutePath ());
+            log.error ("部署 {} 时配置文件context.xml在war{}中，但是deployXML=false", contextName.getName (), war.getAbsolutePath ());
             return;
         } else {
-            //如果文件不存在，就创建一个空的
+            //如果文件不存在或者deployXML=false（忽略xml文件），就创建一个空的
             context = (Context) Class.forName (contextClass).getConstructor ().newInstance ();
         }
 
@@ -405,11 +416,21 @@ public class HostConfig implements LifecycleListener {
 
         //添加context
         contextName.setContextDefaultName (context, true, war);
-        context.setParent (host);
+        if (host.findChild (context.getName ()) != null) {
+            log.warn ("{} 已存在，放弃部署", context.getName ());
+            return;
+        }
+//        context.setParent (host);
         host.addChild (context);
+
+        if (!context.isAvailable ()) {
+            log.error ("Host {} deploy {} 失败", host.getName (), war.getAbsolutePath ());
+            return;
+        }
 
         //添加监听的资源
         //监听war
+        DeployedApplication deployedApp = new DeployedApplication (context.getName (), false);
         deployedApp.redeployResources.put (war.getAbsolutePath (), war.lastModified ());
 
         boolean unpackWAR = unpackWARs;
@@ -417,25 +438,22 @@ public class HostConfig implements LifecycleListener {
             unpackWAR = ((StandardContext) context).getUnpackWAR ();
         }
         if (unpackWAR && context.getDocBase () != null) {
-            File docBase = new File (host.getAppBaseFile (), contextName.getDocBase ());
+            File docBase = new File (host.getAppBaseFile (), context.getDocBase ());
             //监听解压的文件夹,修改就要重新部署
             deployedApp.redeployResources.put (docBase.getAbsolutePath (), docBase.lastModified ());
             if (deployXML && (xmlInWar || xmlInDir.exists ())) {
                 //监听解压的xml
                 deployedApp.redeployResources.put (xmlInDir.getAbsolutePath (), xmlInDir.lastModified ());
             }
+            //监听web.xml
+            deployedApp.reloadResources.put (webXml.getAbsolutePath (), webXml.lastModified ());
         }
 
-        deployed.put (contextName.getName (), deployedApp);
+        deployed.put (context.getName (), deployedApp);
         log.info ("Host {} deploy {} 成功", host.getName (), war.getAbsolutePath ());
     }
 
-    /**
-     * Deploy exploded webapps.
-     *
-     * @param appBase The base path for applications
-     * @param files   The exploded webapps that should be deployed
-     */
+
     protected void deployDirectories(File appBase, String[] files) {
         ExecutorService executor = host.getStartStopExecutor ();
         List<Future<?>> jobs = new ArrayList<> ();
@@ -445,13 +463,14 @@ public class HostConfig implements LifecycleListener {
             ContextName contextName = new ContextName (file);
             String name = contextName.getName ();
 
-            //已经部署了
-            if (deploymentExists (name)) {
-                removeServiced (name);
-                continue;
-            }
-
             if (servicedSet.add (name)) {
+                //已经部署了,但是判断不准确，因为key==context.name,而context的name没有解析就无法确定
+                //所以在deployDirectory内还会去重
+                if (deploymentExists (name)) {
+                    servicedSet.remove (name);
+                    continue;
+                }
+
                 Future<?> future = executor.submit (() -> {
                     try {
                         deployDirectory (contextName, dir);
@@ -477,30 +496,136 @@ public class HostConfig implements LifecycleListener {
 
 
     /**
-     * Deploy WAR files.
-     *
-     * @param appBase The base path for applications
-     * @param files   The WARs to deploy
+     * 周期检查任务
      */
+    protected void check() {
+        if (host.getAutoDeploy ()) {
+            //先处理undeploy和reload(检查资源修改)
+            DeployedApplication[] applications = deployed.values ().toArray (new DeployedApplication[0]);
+            for (DeployedApplication app : applications) {
+                if (servicedSet.add (app.name)) {
+                    try {
+                        checkResources (app);
+                    } finally {
+                        servicedSet.remove (app.name);
+                    }
+                }
+            }
+
+            //再统一deploy，这样新加的也会deploy
+            deployApps ();
+        }
+    }
+
+    /**
+     * 注意是有序的LinkedHashMap，这个和添加的顺序有关，检查的时候只要检查到一个改变了，就会删除后面的！
+     * 重新部署需要删除旧的资源，优先级war大于文件夹
+     * 而reload则不需要
+     * <p>
+     * 简单处理,文件夹优先级高
+     * 文件被修改文件夹的修改时间不变
+     */
+    protected synchronized void checkResources(DeployedApplication app) {
+        //redeploy
+        log.trace ("check {}", app.name);
+        String[] array = app.redeployResources.keySet ().toArray (new String[0]);
+        for (int i = 0; i < array.length; i++) {
+            File file = new File (array[i]);
+            if (!file.exists ()) {
+                //删除了资源无所谓，因为正在用到的资源没法删除。。
+                continue;
+            }
+
+            long lastTime = app.redeployResources.get (array[i]);
+            if (lastTime != file.lastModified ()) {
+                //FIXME ??看源码
+                //修改了
+                undeploy (app);
+
+                for (int j = i + 1; j < array.length; j++) {
+                    File current = new File (array[j]);
+                    ExpandWar.delete (current);
+                }
+                return;
+            }
+        }
+
+        //reload,其实不会用到，因为context reload需要重置状态，即recycle
+        array = app.reloadResources.keySet ().toArray (new String[0]);
+        for (String resource : array) {
+            File file = new File (resource);
+            if (!file.exists ()) {
+                continue;
+            }
+
+            long lastTime = app.reloadResources.get (resource);
+            if (lastTime != file.lastModified ()) {
+                //修改了
+                app.reloadResources.put (resource, file.lastModified ());
+                reload (app);
+                return;
+            }
+        }
+
+        log.trace ("check {} 未修改", app.name);
+    }
+
+    private void reload(DeployedApplication app) {
+        if (log.isInfoEnabled ()) {
+            log.info ("reloading {} ...", app.name);
+        }
+        Context context = (Context) host.findChild (app.name);
+        if (context.isRunning ()) {
+            context.reload ();
+        } else {
+            try {
+                context.start ();
+            } catch (Exception e) {
+                log.error ("", e);
+            }
+        }
+    }
+
+    private void undeploy(DeployedApplication app) {
+        if (log.isInfoEnabled ()) {
+            log.info ("undeploy {} ...", app.name);
+        }
+
+        Container context = host.findChild (app.name);
+        try {
+            host.removeChild (context);
+        } catch (Throwable t) {
+            log.warn ("", t);
+        }
+        deployed.remove (app.name);
+    }
+
+
     protected void deployWARs(File appBase, String[] files) {
         ExecutorService executor = host.getStartStopExecutor ();
         List<Future<?>> jobs = new ArrayList<> ();
 
         for (String file : files) {
-            File dir = new File (appBase, file);
+            File war = new File (appBase, file);
             ContextName contextName = new ContextName (file);
             String name = contextName.getName ();
 
-            //已经部署了
-            if (deploymentExists (name)) {
-                removeServiced (name);
+            if (!(file.toLowerCase (Locale.ENGLISH).endsWith (".war")
+                    && war.isFile () && war.canRead ())) {
                 continue;
             }
 
             if (servicedSet.add (name)) {
+                //已经部署了,但是判断不准确，因为key==context.name,而context的name没有解析就无法确定
+                //所以在deployWAR内还会去重
+                if (deploymentExists (name)) {
+                    servicedSet.remove (name);
+                    continue;
+                }
+
                 Future<?> future = executor.submit (() -> {
                     try {
-                        deployWAR (contextName, dir);
+                        deployWAR (contextName, war);
                     } catch (Exception e) {
                         log.error ("", e);
                     } finally {
@@ -524,9 +649,29 @@ public class HostConfig implements LifecycleListener {
 
     /**
      * Check if a webapp is already deployed in this host.
+     *
+     * @param name 文件夹名或context name
      */
-    protected boolean deploymentExists(String contextName) {
-        return deployed.containsKey (contextName) || (host.findChild (contextName) != null);
+    protected boolean deploymentExists(String name) {
+        //检查文件夹名
+        for (Container child : host.findChildren ()) {
+            Context context = (Context) child;
+            String docBase = context.getDocBase ();
+            if (fixPath (docBase).equals (fixPath (name))) {
+                return true;
+            }
+        }
+        return deployed.containsKey (name) || (host.findChild (name) != null);
+    }
+
+    private String fixPath(String docBase) {
+        while (docBase.contains ("\\")) {
+            docBase = docBase.replace ('\\', '/');
+        }
+        while (docBase.startsWith ("/")) {
+            docBase = docBase.substring (1);
+        }
+        return docBase;
     }
 
 
@@ -551,6 +696,8 @@ public class HostConfig implements LifecycleListener {
          * 被修改后会redeploy
          * 例如添加war包，context.xml文件
          * 0表示文件不存在，所以没有上次修改时间
+         * <p>注意是有序的LinkedHashMap，这个和添加的顺序有关，检查的时候只要检查到一个改变了，就会删除后面的！</p>
+         * 这个会delete原来的资源
          * <p>
          * Any modification of the specified (static) resources will cause a
          * redeployment of the application. If any of the specified resources is
@@ -565,6 +712,7 @@ public class HostConfig implements LifecycleListener {
          * 而redeploy更重量级，是context组件的重新构建
          * 而context.xml修改只能redeploy，但是web.xml修改可以reload（因为有contextConfig类）
          * 0表示文件不存在，所以没有上次修改时间
+         * 这个是无序的，因为不会delete原来的资源
          * <p>
          * Any modification of the specified (static) resources will cause a
          * reload of the application. This will typically contain resources
@@ -596,12 +744,12 @@ public class HostConfig implements LifecycleListener {
         private static final String VERSION_MARKER = "##";
         private static final char FWD_SLASH_REPLACEMENT = '#';
 
-        private final String docBase;
-        private final String path;
+        private String docBase;
+        private String path;
         /**
          * 对应文件夹的名字，可能是多层文件夹;或者war包的文件名
          */
-        private final String name;
+        private String name;
 
         public ContextName(String name) {
             // Strip off any leading "/"
@@ -631,21 +779,26 @@ public class HostConfig implements LifecycleListener {
         void setContextDefaultName(Context context, boolean isWar, File file) {
             if (context.getDocBase () == null ||
                     context.getName () == null ||
-                    context.getPath () == null ||
-                    (isWar && !context.getDocBase ().endsWith (".war"))) {
+                    context.getPath () == null) {
 
                 log.warn ("host {} deploy dir/war {} 没有配置显式的context.xml，故此context" +
-                                "将会被映射到一个默认path={}，docBase={}，name={}",
+                                "将会被映射到一个默认contextPath={}，docBase={}，name={}",
                         host.getName (), file.getAbsolutePath (), path, docBase, name);
 
-                if (isWar) {
-                    context.setDocBase (docBase + ".war");
-                } else {
-                    context.setDocBase (docBase);
-                }
+
+                context.setDocBase (docBase);
                 context.setPath (path);
                 context.setName (name);
             }
+
+            if (isWar && !context.getDocBase ().endsWith (".war")) {
+                context.setDocBase (context.getDocBase () + ".war");
+            }
+
+            //修正为正确的值
+            name = context.getName ();
+            path = context.getPath ();
+            docBase = context.getDocBase ();
         }
 
         @Override

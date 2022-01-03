@@ -39,7 +39,7 @@ class StandardServiceTest {
 
         context.setDocBase ("testContext");
         context.setWorkDir ("/workdir");//和docbase不同
-        context.setDisplayName ("Test");
+        context.setName ("Test");
         context.setPath ("/test");
         context.addLifecycleListener (new StandardContextTest.Listener ());
         PersistentManager manager = new PersistentManager ();

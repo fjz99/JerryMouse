@@ -227,19 +227,16 @@ public final class ContextConfig implements LifecycleListener {
     }
 
     /**
+     * 设定解压war到哪个文件夹下
      * 由context path获得对应的docbase
      * 用于docbase本来是war包的情况，这个就是为了指定解压的目标目录
      * 因为path可能有///所以要还成#
      */
     private String getPathName() {
-        String tmp1 = context.getPath ();
-        // Strip off any leading "/"
-        if (tmp1.startsWith ("/")) {
-            tmp1 = tmp1.substring (1);
+        String tmp1 = context.getDocBase ();
+        if (tmp1.contains (".war")) {
+            tmp1 = tmp1.substring (0, tmp1.indexOf (".war"));
         }
-
-        // Replace any remaining /
-        tmp1 = tmp1.replace ('/', FWD_SLASH_REPLACEMENT);
         return tmp1;
     }
 

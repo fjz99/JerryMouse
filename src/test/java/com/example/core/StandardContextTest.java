@@ -40,7 +40,7 @@ class StandardContextTest {
 
         context.setDocBase ("webapps/testContext");
         context.setWorkDir ("/workdir");//和docbase不同
-        context.setDisplayName ("Test");
+        context.setName ("Test");
         context.setPath ("/test");
         context.addLifecycleListener (new Listener ());
 
@@ -67,7 +67,7 @@ class StandardContextTest {
         connector.setContainer (context);
         context.setDocBase ("webapps/testContext");
         context.setWorkDir ("/workdir");//和docbase不同
-        context.setDisplayName ("Test");
+        context.setName ("Test");
         context.setPath ("/test");
         context.addLifecycleListener (new Listener ());
 
@@ -99,7 +99,7 @@ class StandardContextTest {
      * servlet等
      */
     @Test
-    void runServer() throws LifecycleException, IOException {
+    void runServer() throws LifecycleException, IOException, InterruptedException {
         StandardContext context = new StandardContext ();
         HttpConnector connector = new HttpConnector ();
         connector.setPort (8080);
@@ -123,7 +123,7 @@ class StandardContextTest {
         connector.setContainer (context);
         context.setDocBase ("webapps/testContext");
         context.setWorkDir ("/workdir");//和docbase不同
-        context.setDisplayName ("Test");
+        context.setName ("Test");
         context.setPath ("/test");
         context.addLifecycleListener (new Listener ());
         PersistentManager manager = new PersistentManager ();
@@ -149,6 +149,8 @@ class StandardContextTest {
 
         context.start ();
         connector.start ();
+        Thread.sleep (1000);
+        context.reload ();
         System.in.read ();
     }
 

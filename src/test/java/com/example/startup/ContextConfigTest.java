@@ -16,7 +16,7 @@ class ContextConfigTest {
         ContextConfig contextConfig = new ContextConfig ();
         context.setDocBase ("webapps/testContext");
         context.setPath ("/test");
-        context.setDisplayName ("Context");
+        context.setName ("Context");
         System.out.println (context.getName ());
         context.addLifecycleListener (contextConfig);
 
@@ -32,7 +32,7 @@ class ContextConfigTest {
         context.addLifecycleListener (contextConfig);
         context.setDocBase ("/testContext");
         context.setPath ("/test");
-        context.setDisplayName ("Context");
+        context.setName ("Context");
 
         Host host = new StandardHost ();
         host.setName ("localhost");

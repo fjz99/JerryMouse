@@ -7,6 +7,7 @@ import com.example.Mapper;
 import com.example.Wrapper;
 import com.example.connector.HttpRequest;
 import com.example.connector.Request;
+import com.example.connector.http.HttpRequestImpl;
 import com.example.core.StandardContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -132,6 +133,10 @@ public final class StandardContextMapper extends AbstractMapper {
                     "' and path info '" + pathInfo +
                     "' and update=" + update);
 
+        if (request instanceof HttpRequestImpl &&
+                ((HttpRequestImpl) request).getContextPath () == null) {
+            ((HttpRequestImpl) request).setContextPath (context.getPath ());
+        }
         if (update) {
             request.setWrapper (wrapper);
             ((HttpRequest) request).setServletPath (servletPath);

@@ -91,7 +91,7 @@ public final class StandardContext extends AbstractContainer implements Context 
      * The MIME mappings for this web application, keyed by extension.
      * 即扩展名对应的文件类型（content-type）,比如gif对应image/gif类型
      */
-    private final Map<String, String> mimeMappings = new ConcurrentHashMap<> ();
+    private final Map<String, String> mimeMappings = new ConcurrentHashMap<> (1024);
     /**
      * The watched resources for this application.
      */
@@ -122,7 +122,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     /**
      * 统计正在处理的请求数，由外部valve设置
      */
-    private final AtomicLong inProgressAsyncCount = new AtomicLong (0);
+    private AtomicLong inProgressAsyncCount = new AtomicLong (0);
     private Manager manager = null;
     /**
      * Should we attempt to use cookies for session id communication?
@@ -142,7 +142,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     private String docBase;
     /**
      * The URL of the XML descriptor for this context.
-     * 对应的是context.xml文件
+     * 对应的是META-INF/context.xml文件
      */
     private URL configFile = null;
     /**
@@ -361,6 +361,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         support.firePropertyChange ("available", oldAvailable, this.available);
     }
 
+
     @Override
     public synchronized void stop() throws LifecycleException {
         verifyRunning ();
@@ -399,12 +400,12 @@ public final class StandardContext extends AbstractContainer implements Context 
 
             //因为可能启动失败，这样可以避免fail loudly
             if (getManager () instanceof Lifecycle &&
-                    !((Lifecycle) getManager ()).isRunning ()) {
+                    ((Lifecycle) getManager ()).isRunning ()) {
                 ((Lifecycle) getManager ()).stop ();
             }
 
             if (getPipeline () instanceof Lifecycle &&
-                    !((Lifecycle) getPipeline ()).isRunning ()) {
+                    ((Lifecycle) getPipeline ()).isRunning ()) {
                 ((Lifecycle) getPipeline ()).stop ();
             }
 
@@ -413,7 +414,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
             //最后关闭
             if (getLoader () instanceof Lifecycle &&
-                    !((Lifecycle) getLoader ()).isRunning ()) {
+                    ((Lifecycle) getLoader ()).isRunning ()) {
                 ((Lifecycle) getLoader ()).stop ();
             }
         } finally {
@@ -430,6 +431,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         log.info ("Context {} stopped.", getName ());
     }
 
+    //FIXME
     private void resetContext() {
         for (Container child : findChildren ()) {
             removeChild (child);
@@ -439,6 +441,19 @@ public final class StandardContext extends AbstractContainer implements Context 
         applicationListeners.clear ();
         applicationEventListeners.clear ();
         applicationLifecycleListeners.clear ();
+
+        filterConfigs.clear ();
+        filterMappings.clear ();
+        parameters.clear ();
+        filterDefinitions.clear ();
+        exceptionPages.clear ();
+        statusPages.clear ();
+        initializers.clear ();
+        servletMappings.clear ();
+        mimeMappings.clear ();
+        watchedResources.clear ();
+        welcomeFiles.clear ();
+        resourceOnlyServlets.clear ();
 
         initializers.clear ();
 
@@ -488,9 +503,9 @@ public final class StandardContext extends AbstractContainer implements Context 
      */
     @Override
     public synchronized void start() throws LifecycleException {
-//        if(StringUtils.isEmpty (getName ())){
-//            throw new IllegalStateException ("name不能为空");
-//        }
+        if (StringUtils.isEmpty (getName ())) {
+            throw new IllegalStateException ("name不能为空");
+        }
         verifyStopped ();
         fireLifecycleEvent (BEFORE_START_EVENT, this);
 
@@ -534,6 +549,12 @@ public final class StandardContext extends AbstractContainer implements Context 
                 log.error ("configure = false, Context {} starts failed.", getName ());
                 failToStart ();
                 return;
+            }
+
+            //FIXME
+            if (!getName ().equals (getPath ())) {
+                log.error ("name != path");
+//                System.exit (1);
             }
 
             for (Container child : findChildren ()) {
@@ -588,7 +609,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         if (ok) {
             setAvailable (true);
-            log.info ("Context {} started.", getName ());
+            log.info ("Context {} 启动完成，docbase={}，contextPath={}.", getName (), getDocBase (), getPath ());
         } else {
             failToStart ();
         }

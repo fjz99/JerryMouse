@@ -7,12 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class HostConfigTest {
 
     @Test
-    void deployDirectory() {
+    void deploy() {
         Bootstrap.main (new String[]{"start"});
-    }
-
-    @Test
-    void deployWAR() {
-
     }
 }
