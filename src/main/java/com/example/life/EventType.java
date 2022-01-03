@@ -1,6 +1,14 @@
 package com.example.life;
 
+import com.example.core.AbstractContainer;
+
 public enum EventType {
+
+    /**
+     * 周期任务 {@link AbstractContainer#backgroundProcess()}
+     */
+    PERIODIC_EVENT ("periodic"),
+
     /**
      * The LifecycleEvent type for the "component start" event.
      */
@@ -45,4 +53,5 @@ public enum EventType {
     public String getMessage() {
         return message;
     }
+
 }

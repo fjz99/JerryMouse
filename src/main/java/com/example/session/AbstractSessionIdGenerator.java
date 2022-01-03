@@ -165,7 +165,7 @@ public abstract class AbstractSessionIdGenerator
 
         long t2 = System.currentTimeMillis ();
         if ((t2 - t1) > 100) {
-            log.warn ("随机数生成器{} 初始化耗时为 {}毫秒 (大于100毫秒)", result.getAlgorithm (), t2 - t1);
+            log.debug ("随机数生成器{} 初始化耗时为 {}毫秒 (大于100毫秒)", result.getAlgorithm (), t2 - t1);
         }
         return result;
     }

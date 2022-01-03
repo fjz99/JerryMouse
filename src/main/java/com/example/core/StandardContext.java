@@ -142,6 +142,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     private String docBase;
     /**
      * The URL of the XML descriptor for this context.
+     * 对应的是context.xml文件
      */
     private URL configFile = null;
     /**
@@ -365,7 +366,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         verifyRunning ();
 
         fireLifecycleEvent (BEFORE_STOP_EVENT, this);
-        log.info ("Stopping {}, waiting for finishing {} request(s).", getDisplayName (), getInProgressAsyncCount ());
+        log.info ("Stopping {}, waiting for finishing {} request(s).", getName (), getInProgressAsyncCount ());
 
         running = false;
         setAvailable (false);//我自己加的，让wrapper的valve发出404
@@ -426,7 +427,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         }
 
         setAvailable (false);
-        log.info ("Context {} stopped.", getDisplayName ());
+        log.info ("Context {} stopped.", getName ());
     }
 
     private void resetContext() {
@@ -441,7 +442,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         initializers.clear ();
 
-        log.debug ("Reset context {}.", getDisplayName ());
+        log.debug ("Reset context {}.", getName ());
     }
 
     /**
@@ -476,13 +477,8 @@ public final class StandardContext extends AbstractContainer implements Context 
     @Override
     public String toString() {
         return "StandardContext[" +
-                "'" + displayName + '\'' +
+                "'" + name + '\'' +
                 ']';
-    }
-
-    @Override
-    public String getName() {
-        return getDisplayName ();
     }
 
     /**
@@ -498,7 +494,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         verifyStopped ();
         fireLifecycleEvent (BEFORE_START_EVENT, this);
 
-        log.debug ("Starting context {}", getDisplayName ());
+        log.debug ("Starting context {}", getName ());
         running = true;
         setConfigured (false);//后面会通过监听器设置为true
         setAvailable (false);
@@ -535,7 +531,9 @@ public final class StandardContext extends AbstractContainer implements Context 
             //因为wrapper也在监听器中设置，所以要早点触发监听器
             if (!getConfigured ()) {
                 ok = false;
-                log.error ("configure = false, Context {} starts failed.", getDisplayName ());
+                log.error ("configure = false, Context {} starts failed.", getName ());
+                failToStart ();
+                return;
             }
 
             for (Container child : findChildren ()) {
@@ -554,22 +552,20 @@ public final class StandardContext extends AbstractContainer implements Context 
                 setManager (new StandardManager ());//set的时候会start
             }
 
-            if (ok) {
-                getServletContext ().setAttribute (Globals.RESOURCES_ATTR, getResources ());
-                getServletContext ().setAttribute (Globals.WEBAPP_VERSION, getWebappVersion ());
+            getServletContext ().setAttribute (Globals.RESOURCES_ATTR, getResources ());
+            getServletContext ().setAttribute (Globals.WEBAPP_VERSION, getWebappVersion ());
 
-                setParameters ();
+            setParameters ();
 
-                for (Map.Entry<ServletContainerInitializer, Set<Class<?>>> entry :
-                        initializers.entrySet ()) {
-                    try {
-                        entry.getKey ().onStartup (entry.getValue (),
-                                getServletContext ());
-                    } catch (ServletException e) {
-                        log.error ("standardContext.ServletContainerInitializerFail", e);
-                        ok = false;
-                        break;
-                    }
+            for (Map.Entry<ServletContainerInitializer, Set<Class<?>>> entry :
+                    initializers.entrySet ()) {
+                try {
+                    entry.getKey ().onStartup (entry.getValue (),
+                            getServletContext ());
+                } catch (ServletException e) {
+                    log.error ("standardContext.ServletContainerInitializerFail", e);
+                    ok = false;
+                    break;
                 }
             }
 
@@ -592,19 +588,23 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         if (ok) {
             setAvailable (true);
-            log.info ("Context {} started.", getDisplayName ());
+            log.info ("Context {} started.", getName ());
         } else {
-            setAvailable (false);
-            try {
-                stop ();
-            } catch (Throwable ignored) {
-
-            }
-            log.error ("Context {} started failed.", getDisplayName ());
-            throw new LifecycleException ("start failed");
+            failToStart ();
         }
 
         fireLifecycleEvent (AFTER_START_EVENT, this);
+    }
+
+    private void failToStart() throws LifecycleException {
+        setAvailable (false);
+        try {
+            stop ();
+        } catch (Throwable ignored) {
+
+        }
+        log.error ("Context {} started failed.", getName ());
+        throw new LifecycleException ("start failed");
     }
 
     public String getWorkDir() {
@@ -672,7 +672,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         }
 
         dir.mkdirs ();
-        log.info ("Context {} 创建工作目录 {}", getDisplayName (), dir.getAbsolutePath ());
+        log.info ("Context {} 创建工作目录 {}", getName (), dir.getAbsolutePath ());
 
         // Set the appropriate servlet context attribute
         getServletContext ().setAttribute (ServletContext.TEMPDIR, dir);//!!!temp dir 就是workdir
@@ -694,7 +694,7 @@ public final class StandardContext extends AbstractContainer implements Context 
                 }
             }
         }
-        log.debug ("Context {} filter started.", getDisplayName ());
+        log.debug ("Context {} filter started.", getName ());
         return true;
     }
 
@@ -713,7 +713,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
             filterConfigs.clear ();
         }
-        log.debug ("Context {} filters stopped.", getDisplayName ());
+        log.debug ("Context {} filters stopped.", getName ());
         return false;
     }
 
@@ -762,7 +762,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         setApplicationEventListeners (event.toArray ());
         setApplicationLifecycleListeners (lifecycle.toArray ());
-        log.debug ("Context {} Listeners started.", getDisplayName ());
+        log.debug ("Context {} Listeners started.", getName ());
         return true;
     }
 
@@ -784,7 +784,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
         setApplicationEventListeners (null);
         setApplicationLifecycleListeners (null);
-        log.debug ("Context {} Listeners stopped.", getDisplayName ());
+        log.debug ("Context {} Listeners stopped.", getName ());
         return true;
     }
 
@@ -838,7 +838,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             for (Wrapper wrapper : value) {
                 try {
                     wrapper.load ();
-                    log.debug ("Context {} init servlet {}", getDisplayName (), wrapper.getServletClass ());
+                    log.debug ("Context {} init servlet {}", getName (), wrapper.getServletClass ());
                 } catch (ServletException e) {
                     if (getComputedFailCtxIfServletStartFails ()) {
                         log.error ("wrapper" + wrapper.getServletClass () + "启动异常，终止context启动", e);

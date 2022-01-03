@@ -3,6 +3,7 @@ package com.example.core;
 import com.example.*;
 import com.example.connector.Request;
 import com.example.connector.Response;
+import com.example.life.EventType;
 import com.example.life.Lifecycle;
 import com.example.life.LifecycleBase;
 import com.example.life.LifecycleException;
@@ -163,6 +164,9 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
             first.backgroundProcess ();
             first = first.getNext ();
         }
+
+        //默认触发这个，HostConfig类用到了这个回调，从而进行deploy webapps的检查
+        fireLifecycleEvent (EventType.PERIODIC_EVENT, null);
     }
 
     @Override
@@ -358,7 +362,10 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
             throw new IllegalStateException ("每个组件必须设置name");
         }
 
-        super.start ();
+        if (running) {
+            throw new LifecycleException ();
+        }
+        running = true;
 
         if (pipeline instanceof Lifecycle) {
             ((Lifecycle) pipeline).start ();
@@ -367,6 +374,8 @@ public abstract class AbstractContainer extends LifecycleBase implements Contain
         startStopChildren (false);
         //后start thread，因为thread用到了children
         startThread ();
+
+        fireLifecycleEvent (EventType.START_EVENT, this);//为了HostConfig
     }
 
     @Override

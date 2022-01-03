@@ -1,6 +1,7 @@
 package com.example.core;
 
 import com.example.*;
+import com.example.life.EventType;
 import com.example.life.LifecycleException;
 import com.example.valve.ErrorDispatcherValve;
 import com.example.valve.basic.StandardHostValve;
@@ -43,17 +44,17 @@ public final class StandardHost extends AbstractContainer implements Host {
     private String xmlBase = null;
     /**
      * host's default config path
+     * 似乎表示在conf/xx/xx文件夹下的context.xml文件，即配置了context的关系的文件
      */
     private volatile File hostConfigBase = null;
     /**
-     * The auto deploy flag for this Host.
+     * 是否自动扫描并部署新的webapp
      */
     private boolean autoDeploy = true;
     /**
      * 部署context的时候使用这个类
-     * TODO
      */
-    private String configClass = "null";
+    private String configClass = "com.example.startup.ContextConfig";
     private String contextClass = "com.example.core.StandardContext";
     /**
      * host启动时自动部署所有的context
@@ -61,12 +62,16 @@ public final class StandardHost extends AbstractContainer implements Host {
     private boolean deployOnStartup = true;
     /**
      * deploy Context XML config files property.
+     * 是否部署context.xml
      */
     private boolean deployXML = true;
     /**
      * 默认的
      */
     private String errorReportValveClass = "com.example.valve.ErrorReportValve";
+    /**
+     * 是否解压war包
+     */
     private boolean unpackWARs = true;
     private String workDir;
     /**
@@ -336,6 +341,8 @@ public final class StandardHost extends AbstractContainer implements Host {
 
     @Override
     public synchronized void start() throws LifecycleException {
+        fireLifecycleEvent (EventType.BEFORE_START_EVENT, this);
+
         String errorValve = getErrorReportValveClass ();
 
         if (!StringUtils.isEmpty (errorValve)) {

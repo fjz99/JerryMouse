@@ -3,7 +3,9 @@ package com.example.startup;
 
 import com.example.Container;
 import com.example.Context;
+import com.example.Host;
 import com.example.core.StandardContext;
+import com.example.core.StandardHost;
 import com.example.deploy.ErrorPage;
 import com.example.descriptor.FilterDefinition;
 import com.example.descriptor.FilterMapping;
@@ -14,6 +16,8 @@ import com.example.resource.AbstractContext;
 import com.example.resource.FileDirContext;
 import com.example.startup.rule.TldRuleSet;
 import com.example.startup.rule.WebRuleSet;
+import com.example.util.ExpandWar;
+import com.example.util.UriUtil;
 import org.apache.commons.digester.Digester;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,16 +28,18 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import java.io.*;
 import java.net.JarURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-
+/**
+ * 支持doc base为war，会自动解压
+ */
 public final class ContextConfig implements LifecycleListener {
+
+    private static final char FWD_SLASH_REPLACEMENT = '#';
 
 //    private static final Logger log = LoggerFactory.getLogger (Constants.ParserLogName);
 
@@ -104,11 +110,137 @@ public final class ContextConfig implements LifecycleListener {
         }
 
         // Process the event that has occurred
-        if (event.getType ().equals (EventType.START_EVENT))
+        if (event.getType ().equals (EventType.BEFORE_START_EVENT)) {
+            try {
+                fixDocBase ();
+            } catch (IOException e) {
+                log.error ("", e);
+            }
+        } else if (event.getType ().equals (EventType.START_EVENT)) {
             start ();
-        else if (event.getType ().equals (EventType.STOP_EVENT))
+        } else if (event.getType ().equals (EventType.STOP_EVENT)) {
             stop ();
+        }
 
+    }
+
+    /**
+     * 修正doc base，比如xx.war类型的doc base，绝对路径的，相对路径的，没填(null)的
+     */
+    private void fixDocBase() throws IOException {
+        Host host = (Host) context.getParent ();
+        File hostBaseFile = host.getAppBaseFile ().getAbsoluteFile ();
+
+        //1.如果没有docBase，就推测为path
+        if (context.getDocBase () == null) {
+            context.setDocBase (context.getPath ());
+            if (context.getDocBase () == null) {
+                //没办法了。。
+                return;
+            }
+        }
+
+        String absoluteDocBase;
+        File docBaseFile = new File (context.getDocBase ());
+        if (docBaseFile.isAbsolute ()) {
+            //绝对路径写死了
+            absoluteDocBase = docBaseFile.getAbsolutePath ();
+        } else {
+            //相对路径推测出绝对路径
+            absoluteDocBase = new File (hostBaseFile, context.getDocBase ()).getAbsolutePath ();
+        }
+
+        //host和context都设置为unpack war才会解压war
+        boolean unpackWARs = true;
+        if (host instanceof StandardHost) {
+            unpackWARs = ((StandardHost) host).isUnpackWARs ();
+            if (unpackWARs && context instanceof StandardContext) {
+                unpackWARs = ((StandardContext) context).getUnpackWAR ();
+            }
+        }
+
+        //File缓存
+        File absoluteDocBaseFile = new File (absoluteDocBase);
+        String pathName = getPathName ();
+        //检验一下是文件，避免文件夹叫xxx.war
+        if (absoluteDocBaseFile.isFile () &&
+                absoluteDocBaseFile.getName ().toLowerCase (Locale.ENGLISH).endsWith (".war")) {
+            //如果doc base是war
+
+            URL war = UriUtil.buildJarUrl (absoluteDocBaseFile);
+            if (unpackWARs) {
+                //解压war
+                absoluteDocBase = ExpandWar.expand (host, war, pathName);//解压了之后就是新的path了
+                absoluteDocBaseFile = new File (absoluteDocBase);
+            } else {
+                //不解压就验证war是否合法
+                ExpandWar.validate (host, war, pathName);
+            }
+        } else {
+            //doc base不是war包
+            //那就可能doc base的文件夹存在，war也存在；或doc base文件夹不存在，war存在；
+            //或doc base文件夹存在，war不存在;或doc base文件夹不存在，war不存在 （这两种情况啥也不用做）
+
+            //判断war存不存在
+            File docBaseAbsoluteFileWar = new File (absoluteDocBase + ".war");
+            URL war = null;
+            if (docBaseAbsoluteFileWar.exists ()) {
+                war = UriUtil.buildJarUrl (docBaseAbsoluteFileWar);
+            }
+
+            if (absoluteDocBaseFile.exists ()) {
+                //文件夹也存在
+                if (war != null && unpackWARs) {
+                    //war 存在，检查更新
+                    // Check if WAR needs to be re-expanded (e.g. if it has
+                    // changed). Note: HostConfig.deployWar() takes care of
+                    // ensuring that the correct XML file is used.
+                    // This will be a NO-OP if the WAR is unchanged.
+                    ExpandWar.expand (host, war, pathName);
+                }
+            } else {
+                //文件夹不存在
+                if (war != null) {
+                    //war 存在，根据情况解压
+                    if (unpackWARs) {
+                        absoluteDocBase = ExpandWar.expand (host, war, pathName);
+                        absoluteDocBaseFile = new File (absoluteDocBase);
+                    } else {
+                        absoluteDocBase = docBaseAbsoluteFileWar.getAbsolutePath ();
+                        absoluteDocBaseFile = docBaseAbsoluteFileWar;
+                        ExpandWar.validate (host, war, pathName);
+                    }
+                }
+            }
+        }
+
+        //替换新的doc base
+        String docBase = absoluteDocBase;
+        String hostAbsolutePath = hostBaseFile.getAbsolutePath ();
+        //去掉host
+        if (absoluteDocBase.startsWith (hostAbsolutePath)) {
+            docBase = absoluteDocBase.substring (hostAbsolutePath.length ());
+            if (docBase.startsWith ("/"))
+                docBase = docBase.substring (1);//??
+        }
+        context.setDocBase (docBase);
+    }
+
+    /**
+     * 由context path获得对应的docbase
+     * 用于docbase本来是war包的情况，这个就是为了指定解压的目标目录
+     * 因为path可能有///所以要还成#
+     */
+    private String getPathName() {
+        String tmp1 = context.getPath ();
+        // Strip off any leading "/"
+        if (tmp1.startsWith ("/")) {
+            tmp1 = tmp1.substring (1);
+        }
+
+        // Replace any remaining /
+        tmp1 = tmp1.replace ('/', FWD_SLASH_REPLACEMENT);
+        return tmp1;
     }
 
     /**
@@ -134,7 +266,7 @@ public final class ContextConfig implements LifecycleListener {
 
                 InputSource is = new InputSource (url.toExternalForm ());
                 is.setByteStream (stream);
-                webDigester.setDebug (0);
+                webDigester.setDebug (2);
                 if (context instanceof StandardContext) {
                     ((StandardContext) context).setReplaceWelcomeFiles (true);
                 }
@@ -338,7 +470,7 @@ public final class ContextConfig implements LifecycleListener {
                 InputSource is = new InputSource ("file://" + file.getAbsolutePath ());
                 stream = new FileInputStream (file);
                 is.setByteStream (stream);
-                webDigester.setDebug (0);
+                webDigester.setDebug (2);
                 if (context instanceof StandardContext)
                     ((StandardContext) context).setReplaceWelcomeFiles (true);
                 webDigester.clear ();

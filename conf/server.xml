@@ -7,24 +7,23 @@
                 name="engine1">
             <Host className="com.example.core.StandardHost" errorReportValveClass="com.example.valve.ErrorReportValve"
                   backgroundProcessorDelay="-1" contextClass="com.example.core.StandardContext" deployXML="true"
-                  deployOnStartup="true" unpackWARs="true" configClass="null" startStopThreads="0" autoDeploy="true"
-                  appBase="webapps" createDirs="true" name="localhost" failCtxIfServletStartFails="false">
-                <Context className="com.example.core.StandardContext" paused="false" resourceOnlyServlets=""
-                         available="true" path="/test" useHttpOnly="true" configured="true" ignoreAnnotations="false"
-                         createUploadTargets="false" xmlValidation="true" name="Context" sessionTimeout="30"
-                         unpackWAR="true" docBase="/testContext" sendRedirectBody="false" displayName="Context"
-                         reloadable="false" backgroundProcessorDelay="-1" webappVersion="" cookies="true"
-                         wrapperClass="com.example.core.StandardWrapper" override="false"
-                         workDir="work\engine1\localhost\test" allowCasualMultipartParsing="false" startStopThreads="0"
-                         validateClientProvidedNewSessionId="true">
-<!--                    <Listener className="com.example.startup.ContextConfig"/>-->
-                    <Loader className="com.example.loader.WebappLoader" delegate="false"
-                            loaderClass="com.example.loader.WebappClassLoader" reloadable="false"/>
-                    <Manager className="com.example.session.StandardManager" secureRandomAlgorithm="SHA1PRNG"
-                             fileName="cache.session" processExpiresFrequency="6" maxActiveSessions="-1"
-                             sessionMaxAliveTime="30" maxActive="0">
-                    </Manager>
-                </Context>
+                  deployOnStartup="true" unpackWARs="true" startStopThreads="0" autoDeploy="true"
+                  appBase="temp" createDirs="true" name="localhost" failCtxIfServletStartFails="false">
+<!--                <Context className="com.example.core.StandardContext" paused="false" resourceOnlyServlets=""-->
+<!--                         available="true" path="/test" useHttpOnly="true" configured="true" ignoreAnnotations="false"-->
+<!--                         createUploadTargets="false" xmlValidation="true" name="Context" sessionTimeout="30"-->
+<!--                         unpackWAR="true" docBase="/testContext" sendRedirectBody="false" displayName="Context"-->
+<!--                         reloadable="false" backgroundProcessorDelay="-1" webappVersion="" cookies="true"-->
+<!--                         wrapperClass="com.example.core.StandardWrapper" override="false"-->
+<!--                         workDir="work\engine1\localhost\test" allowCasualMultipartParsing="false" startStopThreads="0"-->
+<!--                         validateClientProvidedNewSessionId="true">-->
+<!--                    <Loader className="com.example.loader.WebappLoader" delegate="false"-->
+<!--                            loaderClass="com.example.loader.WebappClassLoader" reloadable="false"/>-->
+<!--                    <Manager className="com.example.session.StandardManager" secureRandomAlgorithm="SHA1PRNG"-->
+<!--                             fileName="cache.session" processExpiresFrequency="6" maxActiveSessions="-1"-->
+<!--                             sessionMaxAliveTime="30" maxActive="0">-->
+<!--                    </Manager>-->
+<!--                </Context>-->
             </Host>
         </Engine>
     </Service>

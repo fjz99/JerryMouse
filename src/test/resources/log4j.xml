@@ -92,7 +92,7 @@
 
 <!--测试直接打到console上，而且是all级别-->
     <root>
-        <level value="ALL"/>
+        <level value="INFO"/>
         <appender-ref ref="console"/>
 <!--        <appender-ref ref="fileAppender"/>-->
         <!--        <appender-ref ref="rollingAppender"/>-->

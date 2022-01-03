@@ -62,11 +62,11 @@ public class HostRuleSet extends RuleSetBase {
         digester.addSetProperties(prefix + "Host");
         digester.addRule(prefix + "Host",
                          new CopyParentClassLoaderRule(digester));
-//        digester.addRule(prefix + "Host",
-//                         new LifecycleListenerRule
-//                         (digester,
-//                          "org.apache.catalina.startup.HostConfig",
-//                          "hostConfigClass"));
+        digester.addRule(prefix + "Host",
+                         new LifecycleListenerRule
+                         (digester,
+                          "com.example.startup.HostConfig",
+                          "hostConfigClass"));
         digester.addSetNext(prefix + "Host",
                             "addChild",
                             "com.example.Container");

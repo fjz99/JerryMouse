@@ -36,4 +36,6 @@ public final class Constants {
             //      "conf/web_23.dtd";
             "/web-app_2_3.dtd";
 
+    public static final String WarTracker = "/META-INF/war-tracker";
+
 }

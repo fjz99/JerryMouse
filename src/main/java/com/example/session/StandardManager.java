@@ -43,7 +43,7 @@ public class StandardManager extends AbstractManager {
         try {
             fileInputStream = new FileInputStream (file);
         } catch (FileNotFoundException e) {
-            log.warn ("Load session时文件" + file.getAbsolutePath () + "不存在,放弃load", e);
+            log.warn ("Load session时文件" + file.getAbsolutePath () + "不存在,放弃load");
             return;
         }
 
