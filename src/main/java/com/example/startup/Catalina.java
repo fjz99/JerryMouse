@@ -127,6 +127,7 @@ public class Catalina {
         }
 
         Thread shutdownHook = new ShutDownHook ();
+        shutdownHook.setName ("JerryMouse Shutdown Thread");
 
         if (server != null) {
             try {

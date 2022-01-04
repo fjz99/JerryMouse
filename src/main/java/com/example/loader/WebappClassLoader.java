@@ -184,7 +184,7 @@ public class WebappClassLoader
                 } catch (IOException e) {
                     log.error ("添加jar仓库 [{}] 失败,jar格式错误", name, e);
                     try {
-                        addJar (name, null, file);
+                        addJar (name, null, null);
                     } catch (IOException ignored) {
 
                     }
@@ -267,13 +267,12 @@ public class WebappClassLoader
     void addJar(String name, JarFile jarFile, File file) throws IOException {
         try {
 
-            if (name == null ||
-                    file == null) {
+            if (name == null) {
                 throw new IllegalArgumentException (String.format ("%s,%s,%s", name, jarFile, file));
             }
 
             if (jarPath == null ||
-                    !file.getCanonicalPath ().endsWith (getJarPath () + name)) {
+                    (file != null && !file.getCanonicalPath ().endsWith (getJarPath () + name))) {
                 throw new IllegalArgumentException ("不在jar path: " + getJarPath () + "下");
             }
 
@@ -293,6 +292,8 @@ public class WebappClassLoader
             //todo 验证jar包中是否含有黑名单的类
             if (jarFile != null)
                 log.info ("添加jar {}", file.getAbsolutePath ());
+            else
+                log.info ("添加损坏的jar {}", name);
         } finally {
             if (jarFile != null) {
                 jarFile.close ();
@@ -474,6 +475,11 @@ public class WebappClassLoader
             //没找到,找jar
             for (JarRepository jarRepository : jarRepositories.values ()) {
                 String jarPath = path.replace ('\\', '/');//jar 内必须是/
+                if (jarRepository.originalJarFile == null) {
+                    log.warn ("查找资源 {} 时，跳过损坏的 Jar {}", name, jarRepository.jarName);
+                    //jar可能损坏，添加的时候也会添加，防止一直reload
+                    continue;
+                }
 
                 try {
                     jarFile = new JarFile (jarRepository.originalJarFile);

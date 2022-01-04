@@ -371,6 +371,7 @@ public class HostConfig implements LifecycleListener {
         Context context = null;
         //假如文件夹和war都存在，而且这个context还没有部署过，说明用户复制的war懒得删除了
         //此时优先文件夹
+        //如果文件夹和war都没有xml，就以war为准。。
         if (deployXML && xmlInDir.exists ()) {
             synchronized (digesterLock) {
                 try {
@@ -544,8 +545,14 @@ public class HostConfig implements LifecycleListener {
                 undeploy (app);
 
                 for (int j = i + 1; j < array.length; j++) {
-                    log.info ("删除 {} 的资源 {}..", app.name, array[j]);
                     File current = new File (array[j]);
+
+                    if (current.isFile ()) {
+                        continue;
+                        //防止删除context.xml
+                    }
+
+                    log.info ("删除 {} 的资源 {}..", app.name, array[j]);
                     ExpandWar.delete (current);
                 }
                 return;
@@ -794,10 +801,6 @@ public class HostConfig implements LifecycleListener {
                 context.setDocBase (context.getDocBase () + ".war");
             }
 
-            //修正为正确的值
-            name = context.getName ();
-            path = context.getPath ();
-            docBase = context.getDocBase ();
         }
 
         @Override

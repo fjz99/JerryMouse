@@ -143,12 +143,6 @@ public final class Globals {
 
     // ------------------------------------------ ServletContext attribute names
     /**
-     * The servlet context attribute under which we store the class path
-     * for our application class loader (as an object of type String),
-     * delimited with the appropriate path delimiter for this platform.
-     */
-    public static final String CLASS_PATH_ATTR = "org.apache.catalina.jsp_classpath";
-    /**
      * Name of the ServletContext attribute under which we store the context
      * Realm's CredentialHandler (if both the Realm and the CredentialHandler
      * exist).
@@ -165,37 +159,8 @@ public final class Globals {
      * deployment is used).
      */
     public static final String WEBAPP_VERSION = "org.apache.catalina.webappVersion";
-    /**
-     * The servlet context attribute under which we store a flag used
-     * to mark this request as having been processed by the SSIServlet.
-     * We do this because of the pathInfo mangling happening when using
-     * the CGIServlet in conjunction with the SSI servlet. (value stored
-     * as an object of type String)
-     *
-     * @deprecated Unused. This is no longer used as the CGIO servlet now has
-     * generic handling for when it is used as an include.
-     * This will be removed in Tomcat 10
-     */
-    @Deprecated
-    public static final String SSI_FLAG_ATTR = "org.apache.catalina.ssi.SSIServlet";
-    /**
-     * Name of the ServletContext init-param that determines if the JSP engine
-     * should validate *.tld files when parsing them.
-     * <p>
-     * This must be kept in sync with org.apache.jasper.Constants
-     */
-    public static final String JASPER_XML_VALIDATION_TLD_INIT_PARAM = "org.apache.jasper.XML_VALIDATE_TLD";
 
 
-    // --------------------------- ServletContext initialisation parameter names
-    /**
-     * Name of the ServletContext init-param that determines if the JSP engine
-     * will block external entities from being used in *.tld, *.jspx, *.tagx and
-     * tagplugin.xml files.
-     * <p>
-     * This must be kept in sync with org.apache.jasper.Constants
-     */
-    public static final String JASPER_XML_BLOCK_EXTERNAL_INIT_PARAM = "org.apache.jasper.XML_BLOCK_EXTERNAL";
     /**
      * The flag which controls strict servlet specification compliance. Setting
      * this flag to {@code true} will change the defaults for other settings.
@@ -212,10 +177,10 @@ public final class Globals {
 
     static {
         String temp;
-        temp = System.getProperty ("JerryMouse.base");
+        temp = System.getProperty ("catalina.base");
         if (temp == null) {
             temp = System.getProperty ("user.dir");
-            log.warn ("JerryMouse.base == null,fallback to user.dir = " + temp);
+            log.warn ("catalina.base == null,fallback to user.dir = " + temp);
         }
         JERRY_MOUSE_BASE = temp;
     }
