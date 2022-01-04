@@ -170,7 +170,7 @@ public final class StandardContext extends AbstractContainer implements Context 
     /**
      * The reloadable flag for this web application.
      */
-    private boolean reloadable = false;
+    private boolean reloadable = true;
     /**
      * Unpack WAR property.
      */
@@ -553,7 +553,7 @@ public final class StandardContext extends AbstractContainer implements Context 
 
             //FIXME
             if (!getName ().equals (getPath ())) {
-                log.error ("name != path");
+                log.warn ("name != path");
 //                System.exit (1);
             }
 
@@ -1379,7 +1379,7 @@ public final class StandardContext extends AbstractContainer implements Context 
         }
 
         setPaused (false);
-        log.info ("context {} reloaded.", getName ());
+        log.info ("Context {} reloaded.", getName ());
     }
 
     @Override

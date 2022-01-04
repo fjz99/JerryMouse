@@ -59,6 +59,7 @@ public final class FileDirContext extends AbstractContext {
 
     /**
      * Retrieves the named object.
+     * 注意，返回的文件夹的doc base会变为对应文件夹的地址
      *
      * @param name the name of the object to look up
      * @return the object bound to name
@@ -140,8 +141,12 @@ public final class FileDirContext extends AbstractContext {
      * @param name Normalized context-relative path (with leading '/')
      */
     private File file(String name) {
+        File file = new File (name);
+        if (file.isAbsolute ()) {
+            return file;
+        }
 
-        File file = new File (base, name);
+        file = new File (base, name);
         if (file.exists () && file.canRead ()) {
             return file;
         } else {

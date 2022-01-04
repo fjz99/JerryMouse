@@ -506,14 +506,14 @@ public final class ContextConfig implements LifecycleListener {
         applicationConfig ();
 
         // Scan tag library descriptor files for additional listener classes
-        if (ok) {
-            try {
-                tldScan ();
-            } catch (Exception e) {
-                log.error (e.getMessage (), e);
-                ok = false;
-            }
-        }
+//        if (ok) {
+//            try {
+//                tldScan ();
+//            } catch (Exception e) {
+//                log.error (e.getMessage (), e);
+//                ok = false;
+//            }
+//        }
 
         // Configure a certificates exposer valve, if required
 //        if (ok)

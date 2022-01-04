@@ -26,6 +26,16 @@ class FileDirContextTest {
     }
 
     @Test
+    void lookup2() {
+        FileDirContext fileDirContext = new FileDirContext ();
+        System.out.println (System.getProperty ("user.dir"));
+        fileDirContext.setDocBase ("webapps/testFileDirContext");
+        FileDirContext.FileResource lookup = ((FileDirContext.FileResource) fileDirContext.lookup ("abc.txt"));
+        String absolutePath = lookup.getFile ().getAbsolutePath ();
+        Object o = fileDirContext.lookup (absolutePath);
+    }
+
+    @Test
     void list() {
         FileDirContext fileDirContext = new FileDirContext ();
         System.out.println (System.getProperty ("user.dir"));

@@ -8,6 +8,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.reflect.generics.repository.ClassRepository;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.zip.ZipException;
 
 import static com.example.loader.Constants.WEB_INF_CLASSES_LOCATION;
 import static com.example.loader.Constants.WEB_INF_LIB_LOCATION;
@@ -44,6 +46,7 @@ public class WebappClassLoader
     protected final Set<String> notFoundResources = Collections.newSetFromMap (new ConcurrentHashMap<> ());
     /**
      * ResourceEntry缓存，给findResource方法使用的
+     * key为类名
      */
     protected final Map<String, ResourceEntry> resourceEntries = new ConcurrentHashMap<> ();
     /**
@@ -52,6 +55,7 @@ public class WebappClassLoader
     protected final List<ClassRepository> classRepositories = new ArrayList<> ();
     /**
      * jar仓库
+     * key=jarName
      */
     protected final Map<String, JarRepository> jarRepositories = new HashMap<> ();
     protected final LifeCycleSupport lifeCycleSupport = new LifeCycleSupport (this);
@@ -172,14 +176,18 @@ public class WebappClassLoader
 
         for (Object o : list) {
             if (o instanceof FileDirContext.FileResource) {
+                FileDirContext.FileResource resource = (FileDirContext.FileResource) o;
+                File file = resource.getFile ();
+                String name = file.getName ();
                 try {
-                    FileDirContext.FileResource resource = (FileDirContext.FileResource) o;
-                    File file = resource.getFile ();
-                    String fileName = file.getName ();
-
-                    addJar (fileName, new JarFile (file), file);
+                    addJar (name, new JarFile (file), file);
                 } catch (IOException e) {
-                    e.printStackTrace ();
+                    log.error ("添加jar仓库 [{}] 失败,jar格式错误", name, e);
+                    try {
+                        addJar (name, null, file);
+                    } catch (IOException ignored) {
+
+                    }
                 }
             }
         }
@@ -196,13 +204,6 @@ public class WebappClassLoader
         lifeCycleSupport.fireLifecycleEvent (EventType.STOP_EVENT, null);
 
         //因为可以再次启动，所以。。这个就相当于recycle
-        try {
-            for (JarRepository jarRepository : jarRepositories.values ()) {
-                jarRepository.jarFile.close ();
-            }
-        } catch (IOException e) {
-            e.printStackTrace ();
-        }
 
         jarRepositories.clear ();
         resourceEntries.clear ();
@@ -261,35 +262,42 @@ public class WebappClassLoader
      *
      * @param name    jar name，比如xxx.jar
      * @param file    jar路径，从工作路径开始，如webapp/WEB-INF/lib/xx.jar
-     * @param jarFile 通过file创建的 new JarFile (file)
+     * @param jarFile 通过file创建的 new JarFile (file),null表示占位符，用于jar包格式不正确的情况
      */
     void addJar(String name, JarFile jarFile, File file) throws IOException {
-        if (name == null ||
-                jarFile == null ||
-                file == null) {
-            throw new IllegalArgumentException (String.format ("%s,%s,%s", name, jarFile, file));
+        try {
+
+            if (name == null ||
+                    file == null) {
+                throw new IllegalArgumentException (String.format ("%s,%s,%s", name, jarFile, file));
+            }
+
+            if (jarPath == null ||
+                    !file.getCanonicalPath ().endsWith (getJarPath () + name)) {
+                throw new IllegalArgumentException ("不在jar path: " + getJarPath () + "下");
+            }
+
+            JarRepository jarRepository = new JarRepository ();
+//            jarRepository.jarFile = jarFile;
+            jarRepository.jarName = name;
+            jarRepository.originalJarFile = file;
+
+            //获得修改时间
+            String p = getJarPath () + name;//所以jar不能嵌套目录
+            FileDirContext.FileResourceAttributes attributes =
+                    (FileDirContext.FileResourceAttributes) resourceContext.getAttributes (p);
+            jarRepository.lastModifyTime = attributes.getLastModified ();
+
+            jarRepositories.put (name, jarRepository);
+
+            //todo 验证jar包中是否含有黑名单的类
+            if (jarFile != null)
+                log.info ("添加jar {}", file.getAbsolutePath ());
+        } finally {
+            if (jarFile != null) {
+                jarFile.close ();
+            }
         }
-
-        if (jarPath == null ||
-                !file.getCanonicalPath ().endsWith (getJarPath () + name)) {
-            throw new IllegalArgumentException ("不在jar path: " + getJarPath () + "下");
-        }
-
-        JarRepository jarRepository = new JarRepository ();
-        jarRepository.jarFile = jarFile;
-        jarRepository.jarName = name;
-        jarRepository.originalJarFile = file;
-
-        //获得修改时间
-        String p = getJarPath () + name;//所以jar不能嵌套目录
-        FileDirContext.FileResourceAttributes attributes =
-                (FileDirContext.FileResourceAttributes) resourceContext.getAttributes (p);
-        jarRepository.lastModifyTime = attributes.getLastModified ();
-
-        jarRepositories.put (name, jarRepository);
-
-        //todo 验证jar包中是否含有黑名单的类
-        log.info ("添加jar {}", file.getAbsolutePath ());
     }
 
     /**
@@ -315,8 +323,8 @@ public class WebappClassLoader
             throw new IllegalArgumentException ("查找" + repository + "的结果必须是文件夹，而不是" + lookup);
         }
 
-        File docBase = new File (((FileDirContext) lookup).getDocBase ());
-        File file = new File (docBase, repository);
+        //查找到的文件夹的doc base就变了，变成新的文件夹的base了
+        File file = new File (resourceContext.getDocBase (), repository);
         //保证结尾有/
         if (!repository.endsWith (File.separator)) {
             repository = repository + File.separator;
@@ -340,22 +348,28 @@ public class WebappClassLoader
 
     /**
      * 用于检测类是否修改，是否需要重新加载，具体的加载逻辑在context中
-     * 只检查jar
+     * 不需要修改jar repo等，因为reload会关闭在启动的，此时会自动扫描
      */
     @Override
     public boolean modified() {
+        log.debug ("Loader check modified");
+        boolean modified = false;
         for (JarRepository jarRepository : jarRepositories.values ()) {
             String jar = getJarPath () + jarRepository.jarName;
             ResourceAttributes attributes = resourceContext.getAttributes (jar);
+
             if (attributes == null) {
                 //说明删除了
-                return true;
+                log.info ("Reloader: jar " + jarRepository.jarName + " 被删除了");
+                modified = true;
+                continue;
             }
 
             long lastModified = attributes.getLastModified ();
             if (lastModified != jarRepository.lastModifyTime) {
-                System.out.println ("jar " + jarRepository.jarName + " 被修改了");
-                return true;
+                //被修改了就要重新添加
+                log.info ("Reloader: jar " + jarRepository.jarName + " 被修改了");
+                modified = true;//不要return，一次检查出所有的修改
             }
         }
 
@@ -363,18 +377,42 @@ public class WebappClassLoader
         for (Object o : resourceContext.list (jarPath)) {
             if (o instanceof FileDirContext.FileResource) {
                 FileDirContext.FileResource fileResource = (FileDirContext.FileResource) o;
-                String name = fileResource.getFile ().getName ();
-                JarRepository jarRepository = jarRepositories.get (name);
+                File file = fileResource.getFile ();
+                String name = file.getName ();
+                if (!name.endsWith (".jar")) {
+                    continue;
+                }
 
+                JarRepository jarRepository = jarRepositories.get (name);
                 if (jarRepository == null) {
                     //说明新增了
-                    System.out.println ("新增jar " + name);
-                    return true;
+                    log.info ("Reloader: 新增jar " + name);
+                    modified = true;
                 }
             }
         }
 
-        return false;
+        //classes,直接检查加载的类是否修改(和删除)就行了，没加载的类修改没必要reload
+        for (Map.Entry<String, ResourceEntry> entry : resourceEntries.entrySet ()) {
+            ResourceEntry resourceEntry = entry.getValue ();
+            long lastModified = resourceEntry.lastModified;
+            FileDirContext.FileResource resource =
+                    (FileDirContext.FileResource) resourceContext.lookup (resourceEntry.codeBase.getPath ());
+            long now = resource.getAttribute ().getLastModified ();
+
+            if (now == 0) {
+                //文件已删除
+                log.info ("Reloader: Class 被删除: " + resource.getFile ().getAbsolutePath ());
+                modified = true;
+            } else if (now != lastModified) {
+                //修改
+                log.info ("Reloader: Class modified: " + resource.getFile ().getAbsolutePath ());
+                modified = true;
+            }
+
+        }
+
+        return modified;
     }
 
     /**
@@ -408,7 +446,7 @@ public class WebappClassLoader
         for (ClassRepository classRepository : classRepositories) {
             //pathName是仓库path，path是仓库下的path
             //这里pathName结尾肯定是/
-            String fullName = classRepository.pathName + path;
+            String fullName = new File (classRepository.pathName, path).getPath ();
             Object o = resourceContext.lookup (fullName);
 
             //顺便检验了null（即存不存在）
@@ -431,11 +469,21 @@ public class WebappClassLoader
             }
         }
 
+        JarFile jarFile = null;
         if (resourceEntry == null) {
             //没找到,找jar
             for (JarRepository jarRepository : jarRepositories.values ()) {
                 String jarPath = path.replace ('\\', '/');//jar 内必须是/
-                JarEntry jarEntry = jarRepository.jarFile.getJarEntry (jarPath);
+
+                try {
+                    jarFile = new JarFile (jarRepository.originalJarFile);
+                } catch (IOException e) {
+                    log.error ("打开jar " + jarPath + " 失败", e);
+                    return null;
+                    //因为应该已经验证过了。。但是可能被修改(或被删除)，所以仍然可能无法打开这个jar
+                    //如果被修改了(或被删除)，就等待reload即可
+                }
+                JarEntry jarEntry = jarFile.getJarEntry (jarPath);
 
                 if (jarEntry != null) {
                     resourceEntry = new ResourceEntry ();
@@ -451,8 +499,8 @@ public class WebappClassLoader
                     }
 
                     try {
-                        resourceEntry.manifest = jarRepository.jarFile.getManifest ();
-                        stream = jarRepository.jarFile.getInputStream (jarEntry);
+                        resourceEntry.manifest = jarFile.getManifest ();
+                        stream = jarFile.getInputStream (jarEntry);
                         length = (int) jarEntry.getSize ();
                     } catch (IOException e) {
                         return null;
@@ -479,6 +527,22 @@ public class WebappClassLoader
         } catch (IOException e) {
             e.printStackTrace ();
             return null;
+        } finally {
+            try {
+                if (stream != null) {
+                    stream.close ();
+                }
+            } catch (IOException e) {
+                e.printStackTrace ();
+            }
+
+            try {
+                if (jarFile != null) {
+                    jarFile.close ();
+                }
+            } catch (IOException e) {
+                e.printStackTrace ();
+            }
         }
 
         //添加完成任务缓存
@@ -576,6 +640,10 @@ public class WebappClassLoader
         return clazz;
     }
 
+    /**
+     * 两个缓存并不相同：
+     * 本地缓存只会缓存本地repo加载的类，而全局缓存会缓存所有加载的类，比如委托给父类加载器加载的类
+     */
     @Override
     public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         log.debug ("类加载 {}", name);
@@ -699,7 +767,7 @@ public class WebappClassLoader
         /**
          * 对应的jar文件
          */
-        JarFile jarFile;
+//        JarFile jarFile;
 
         /**
          * 对应的jar文件 jarFile = new JarFile(originalJarFile)

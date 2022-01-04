@@ -4,8 +4,6 @@ package com.example.util;
 import com.example.Host;
 import com.example.startup.Constants;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import java.io.*;
 import java.net.JarURLConnection;
@@ -20,13 +18,14 @@ import java.util.zip.ZipException;
 
 /**
  * Expand out a WAR in a Host's appBase.
+ * 抄的
  *
  * @author Craig R. McClanahan
  * @author Remy Maucherat
  * @author Glenn L. Nielsen
  */
 @Slf4j
-public class ExpandWar {
+public final class ExpandWar {
 
     /**
      * Expand the WAR file found at the specified URL into an unpacked

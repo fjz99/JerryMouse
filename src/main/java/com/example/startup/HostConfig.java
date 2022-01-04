@@ -527,7 +527,7 @@ public class HostConfig implements LifecycleListener {
      */
     protected synchronized void checkResources(DeployedApplication app) {
         //redeploy
-        log.trace ("check {}", app.name);
+        log.debug ("check {} 是否修改", app.name);
         String[] array = app.redeployResources.keySet ().toArray (new String[0]);
         for (int i = 0; i < array.length; i++) {
             File file = new File (array[i]);
@@ -540,9 +540,11 @@ public class HostConfig implements LifecycleListener {
             if (lastTime != file.lastModified ()) {
                 //FIXME ??看源码
                 //修改了
+                log.info ("{} 的资源 {} 被修改了，重新部署..", app.name, array[i]);
                 undeploy (app);
 
                 for (int j = i + 1; j < array.length; j++) {
+                    log.info ("删除 {} 的资源 {}..", app.name, array[j]);
                     File current = new File (array[j]);
                     ExpandWar.delete (current);
                 }
@@ -562,18 +564,17 @@ public class HostConfig implements LifecycleListener {
             if (lastTime != file.lastModified ()) {
                 //修改了
                 app.reloadResources.put (resource, file.lastModified ());
+                log.info ("{} 的资源 {} 被修改了，reloading..", app.name, resource);
                 reload (app);
                 return;
             }
         }
 
-        log.trace ("check {} 未修改", app.name);
+        log.debug ("check {} 未修改", app.name);
     }
 
     private void reload(DeployedApplication app) {
-        if (log.isInfoEnabled ()) {
-            log.info ("reloading {} ...", app.name);
-        }
+        log.info ("reloading {} ...", app.name);
         Context context = (Context) host.findChild (app.name);
         if (context.isRunning ()) {
             context.reload ();
@@ -587,9 +588,7 @@ public class HostConfig implements LifecycleListener {
     }
 
     private void undeploy(DeployedApplication app) {
-        if (log.isInfoEnabled ()) {
-            log.info ("undeploy {} ...", app.name);
-        }
+        log.info ("undeploy {} ...", app.name);
 
         Container context = host.findChild (app.name);
         try {

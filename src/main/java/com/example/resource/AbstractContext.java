@@ -7,7 +7,8 @@ import java.util.Collection;
  */
 public abstract class AbstractContext {
     /**
-     * 即webroot的位置
+     * 文件夹的base地址
+     * 对于context来说，就是webroot的位置
      */
     private String docBase;
 

@@ -39,7 +39,7 @@ public class WebappLoader extends LifecycleBase
      * 所有的classLoader都必须是WebappClassLoader的子类
      */
     private WebappClassLoader classLoader;
-    private boolean reloadable = false;
+    private boolean reloadable = true;
     /**
      * 双亲委派标志位
      */
