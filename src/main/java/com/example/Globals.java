@@ -160,6 +160,7 @@ public final class Globals {
      */
     public static final String WEBAPP_VERSION = "org.apache.catalina.webappVersion";
 
+    public static final String WELCOME_FILES_ATTR = "org.apache.catalina.WELCOME_FILES";
 
     /**
      * The flag which controls strict servlet specification compliance. Setting

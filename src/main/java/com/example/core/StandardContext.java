@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.example.Globals.JERRY_MOUSE_BASE;
+import static com.example.Globals.WELCOME_FILES_ATTR;
 import static com.example.life.EventType.*;
 
 /**
@@ -1244,6 +1245,7 @@ public final class StandardContext extends AbstractContainer implements Context 
             }
             welcomeFiles.add (name);
         }
+        getServletContext ().setAttribute (WELCOME_FILES_ATTR, welcomeFiles);
         fireContainerEvent (ADD_WELCOME_FILE_EVENT, name);
     }
 

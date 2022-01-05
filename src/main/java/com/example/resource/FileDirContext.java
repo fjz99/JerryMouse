@@ -1,16 +1,11 @@
 package com.example.resource;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.AbstractFileFilter;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 简化版本的jndi功能
@@ -99,20 +94,23 @@ public final class FileDirContext extends AbstractContext {
         return new FileResourceAttributes (file);
     }
 
+    private String normalize(String path) {
+        while (path.contains ("\\")) {
+            path = path.replace ('\\', '/');
+        }
+        return path;
+    }
+
     @Override
     public Collection<Object> list(String path) {
+        path = normalize (path);
         File file = new File (base, path);
-        Collection<File> files = FileUtils.listFilesAndDirs (file, new AbstractFileFilter () {
-            @Override
-            public boolean accept(File file) {
-                return true;
-            }
-        }, new AbstractFileFilter () {
-            @Override
-            public boolean accept(File file) {
-                return true;
-            }
-        });
+        String[] strings = file.list ();
+        if (strings == null) {
+            return new ArrayList<> ();
+        }
+
+        List<File> files = Arrays.stream (strings).map (x -> new File (file, x)).collect (Collectors.toList ());
         List<Object> list = new ArrayList<> ();
         for (File aFile : files) {
             if (aFile.canRead () && aFile.exists ()) {
@@ -128,7 +126,7 @@ public final class FileDirContext extends AbstractContext {
         return list;
     }
 
-    public File getFile() {
+    public File getAbsoluteFile() {
         return new File (base.getAbsolutePath ());
     }
 
@@ -141,6 +139,7 @@ public final class FileDirContext extends AbstractContext {
      * @param name Normalized context-relative path (with leading '/')
      */
     private File file(String name) {
+        name = normalize (name);
         File file = new File (name);
         if (file.isAbsolute ()) {
             return file;
@@ -165,14 +164,13 @@ public final class FileDirContext extends AbstractContext {
     public static class FileResource extends Resource {
 
         /**
-         * Associated file object.
+         * 绝对路径的文件
          */
         protected File file;
         /**
          * File length.
          */
         protected long length = -1L;
-
 
         public FileResource(File file) {
             this.file = file;

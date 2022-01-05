@@ -28,7 +28,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import java.io.*;
 import java.net.JarURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.jar.JarEntry;
@@ -772,7 +771,7 @@ public final class ContextConfig implements LifecycleListener {
             if (item instanceof FileDirContext.FileResource) {
                 name = ((FileDirContext.FileResource) item).getFile ().getName ();
             } else {
-                name = ((FileDirContext) item).getFile ().getName ();
+                name = ((FileDirContext) item).getAbsoluteFile ().getName ();
             }
             String resourcePath = "/WEB-INF/" + name;
             // scan subdirectories of /WEB-INF for TLDs also
@@ -791,7 +790,7 @@ public final class ContextConfig implements LifecycleListener {
             if (item instanceof FileDirContext.FileResource) {
                 name = ((FileDirContext.FileResource) item).getFile ().getName ();
             } else {
-                name = ((FileDirContext) item).getFile ().getName ();
+                name = ((FileDirContext) item).getAbsoluteFile ().getName ();
             }
             String resourcePath = "/WEB-INF/lib/" + name;
             if (!resourcePath.endsWith (".jar")) {

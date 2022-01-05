@@ -525,7 +525,6 @@ public final class StoreConfigurationUtil {
         }
 
         // Store nested <Cluster> elements
-        // FIXME - But it's not supported by any standard Host implementation
 
         // Store nested <Context> elements (or other relevant containers)
         Container[] children = host.findChildren ();

@@ -115,7 +115,7 @@ public class ErrorReportValve extends AbstractValve {
         sb.append ("</head><body>");
         sb.append ("<h1>");
         sb.append ("status=").append (statusCode);
-        sb.append (",message=").append (message).append ("</h1>");
+        sb.append (",message=").append (RequestUtil.URLDecode (message)).append ("</h1>");
         sb.append ("<HR size=\"1\" noshade>");
         sb.append ("<p><b>type</b> ");
         if (throwable != null) {
@@ -127,11 +127,11 @@ public class ErrorReportValve extends AbstractValve {
         sb.append ("<p><b>");
         sb.append ("message");
         sb.append ("</b> <u>");
-        sb.append (message).append ("</u></p>");
+        sb.append (RequestUtil.URLDecode (message)).append ("</u></p>");
         sb.append ("<p><b>");
         sb.append ("description");
         sb.append ("</b> <u>");
-        sb.append (report);
+        sb.append (RequestUtil.URLDecode (message));
         sb.append ("</u></p>");
 
         if (throwable != null) {

@@ -1,5 +1,6 @@
 package com.example.resource;
 
+import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.BasicAttribute;
 import java.text.SimpleDateFormat;
@@ -14,90 +15,66 @@ import java.util.Locale;
 public class ResourceAttributes {
 
     /**
+     * ETag.
+     */
+    public static final String ETAG = "getetag";
+    /**
      * Creation date.
      */
     public static final String CREATION_DATE = "creationdate";
-
-
     /**
      * Creation date.
      */
     public static final String ALTERNATE_CREATION_DATE = "creation-date";
-
-
     /**
      * Last modification date.
      */
     public static final String LAST_MODIFIED = "getlastmodified";
-
-
     /**
      * Last modification date.
      */
     public static final String ALTERNATE_LAST_MODIFIED = "last-modified";
-
-
     /**
      * Name.
      */
     public static final String NAME = "displayname";
-
-
     /**
      * Type.
      */
     public static final String TYPE = "resourcetype";
-
-
     /**
      * Type.
      */
     public static final String ALTERNATE_TYPE = "content-type";
-
-
     /**
      * Source.
      */
     public static final String SOURCE = "source";
-
-
     /**
      * MIME type of the content.
      */
     public static final String CONTENT_TYPE = "getcontenttype";
-
-
     /**
      * Content language.
      */
     public static final String CONTENT_LANGUAGE = "getcontentlanguage";
-
-
     /**
      * Content length.
      */
     public static final String CONTENT_LENGTH = "getcontentlength";
-
-
     /**
      * Content length.
      */
     public static final String ALTERNATE_CONTENT_LENGTH = "content-length";
-
-
     /**
      * Collection type.
      */
     public static final String COLLECTION_TYPE = "<collection/>";
-
-
     /**
      * HTTP date format.
      */
     protected static final SimpleDateFormat format =
             new SimpleDateFormat ("yyyy-dd-MM HH:mm:ss zzz", Locale.getDefault ());
-
-
     /**
      * Date formats using for Date parsing.
      */
@@ -107,7 +84,14 @@ public class ResourceAttributes {
             new SimpleDateFormat ("EEEEEE, dd-MMM-yy HH:mm:ss zzz", Locale.getDefault ()),
             new SimpleDateFormat ("EEE MMMM d HH:mm:ss yyyy", Locale.getDefault ())
     };
-
+    /**
+     * Weak ETag.
+     */
+    protected String weakETag = null;
+    /**
+     * Strong ETag.
+     */
+    protected String strongETag = null;
     /**
      * Collection flag.
      */
@@ -365,6 +349,49 @@ public class ResourceAttributes {
                         getContentLength ());
         }
         return null;
+    }
+
+    /**
+     * Get ETag.
+     *
+     * @return Weak ETag
+     */
+    public String getETag() {
+        return getETag(false);
+    }
+
+
+    /**
+     * Get ETag.
+     *
+     * @param strong If true, the strong ETag will be returned
+     * @return ETag
+     */
+    public String getETag(boolean strong) {
+        return "";
+//        String result = null;
+//        if (attributes != null) {
+//            Attribute attribute = attributes.get(ETAG);
+//            if (attribute != null) {
+//                try {
+//                    result = attribute.get().toString();
+//                } catch (NamingException e) {
+//                    ; // No value for the attribute
+//                }
+//            }
+//        }
+//        if (strong) {
+//            // The strong ETag must always be calculated by the resources
+//            result = strongETag;
+//        } else {
+//            // The weakETag is contentLenght + lastModified
+//            if (weakETag == null) {
+//                weakETag = "W/\"" + getContentLength() + "-"
+//                        + getLastModified() + "\"";
+//            }
+//            result = weakETag;
+//        }
+//        return result;
     }
 
     /**

@@ -181,8 +181,8 @@ public abstract class AbstractResponse implements Response, ServletResponse {
         if (servletOutputStream != null) {
             try {
                 servletOutputStream.close ();
-            } catch (IOException e) {
-                e.printStackTrace ();
+            } catch (IOException ignored) {
+
             }
         }
 
@@ -223,14 +223,19 @@ public abstract class AbstractResponse implements Response, ServletResponse {
 
     @Override
     public ServletOutputStream getOutputStream() {
+        if (servletOutputStream != null) {
+            throw new IllegalStateException ();
+        }
+        servletOutputStream = new HttpResponseStream (outputStream);
         return servletOutputStream;
     }
 
     @Override
     public PrintWriter getWriter() {
-        if (writer == null) {
-            writer = new PrintWriter (new OutputStreamWriter (outputStream));
+        if (writer != null) {
+            throw new IllegalStateException ();
         }
+        writer = new PrintWriter (new OutputStreamWriter (outputStream));
         return writer;
     }
 

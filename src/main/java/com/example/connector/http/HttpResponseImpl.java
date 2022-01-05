@@ -201,7 +201,7 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
 //
 //        String contextPath = getContext ().getPath ();
 //        if ((contextPath != null) && (contextPath.length () > 0)) {
-//            String file = url.getFile ();
+//            String file = url.getAbsoluteFile ();
 //            if ((file == null) || !file.startsWith (contextPath))
 //                return (false);
 //            if (file.indexOf (";jsessionid=" + session.getId ()) >= 0)

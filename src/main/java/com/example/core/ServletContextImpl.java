@@ -93,10 +93,19 @@ public class ServletContextImpl implements ServletContext {
     /**
      * 获得数据类型；
      * 即扩展名对应的文件类型（content-type）,比如gif对应image/gif类型
+     * 根据context的mime mapping获得即可
      */
     @Override
     public String getMimeType(String file) {
-        return null;
+        if (file == null)
+            return null;
+        int period = file.lastIndexOf (".");
+        if (period < 0)
+            return null;
+        String extension = file.substring (period + 1);
+        if (extension.length () < 1)
+            return null;
+        return context.findMimeMapping (extension);
     }
 
     /**
@@ -109,7 +118,7 @@ public class ServletContextImpl implements ServletContext {
 
         for (Object o : context.getResources ().list (path)) {
             if (o instanceof FileDirContext) {
-                set.add (((FileDirContext) o).getFile ().getPath ());
+                set.add (((FileDirContext) o).getAbsoluteFile ().getPath ());
             } else {
                 set.add (((FileDirContext.FileResource) o).getFile ().getPath ());
             }
@@ -126,7 +135,7 @@ public class ServletContextImpl implements ServletContext {
         if (lookup instanceof FileDirContext.FileResource) {
             return ((FileDirContext.FileResource) lookup).getFile ().toURL ();
         } else {
-            return ((FileDirContext) lookup).getFile ().toURL ();
+            return ((FileDirContext) lookup).getAbsoluteFile ().toURL ();
         }
     }
 

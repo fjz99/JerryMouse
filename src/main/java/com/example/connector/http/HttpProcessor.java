@@ -105,15 +105,13 @@ public final class HttpProcessor extends LifecycleBase {
         try {
             response.finishResponse ();
         } catch (Throwable e) {
-            e.printStackTrace ();
-            log.error ("response process.invoke " + e);
+//            log.error ("response process.invoke ", e);
         }
 
         try {
             request.finishRequest ();
         } catch (Throwable e) {
-            e.printStackTrace ();
-            log.error ("request process.invoke " + e);
+//            log.error ("request process.invoke ", e);
         }
 
         doSend ();
@@ -283,7 +281,7 @@ public final class HttpProcessor extends LifecycleBase {
             if (quality < 0.00005)
                 continue;       // Zero (or effectively zero) quality factors
             if ("*".equals (entry))
-                continue;       // FIXME - "*" entries are not handled
+                continue;
 
             // Extract the language and country for this entry
             String language = null;
