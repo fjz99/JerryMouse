@@ -20,7 +20,7 @@ import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.example.connector.http.Constants.SET_COOKIE;
+import static com.example.connector.http.Constants.*;
 
 
 /**

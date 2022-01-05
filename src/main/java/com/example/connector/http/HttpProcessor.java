@@ -20,15 +20,16 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.example.Globals.SERVER_INFO;
-import static com.example.connector.http.Constants.*;
+import static com.example.HeaderValues.APPLICATION_JSON;
+import static com.example.HeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
+import static com.example.connector.http.Constants.DATE_TIME_FORMATTER;
+import static com.google.common.net.HttpHeaders.*;
 
 /**
  * HttpProcessor内部是单线程的，Connector会保证HttpProcessor会被单线程访问

@@ -188,7 +188,8 @@ public final class FileDirContext extends AbstractContext {
         }
 
         /**
-         * Content accessor.
+         * 创建一个新的stream
+         * 如果有缓存的文件内容，那就直接返回
          *
          * @return InputStream
          */

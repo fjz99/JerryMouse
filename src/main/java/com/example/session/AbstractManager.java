@@ -45,6 +45,18 @@ public abstract class AbstractManager
      * session多久超时
      */
     protected volatile int sessionMaxAliveTime;
+    /**
+     * The flag that indicates that session cookies should use HttpOnly
+     */
+    private boolean useHttpOnly = true;
+
+    public boolean isUseHttpOnly() {
+        return useHttpOnly;
+    }
+
+    public void setUseHttpOnly(boolean useHttpOnly) {
+        this.useHttpOnly = useHttpOnly;
+    }
 
     /*
      * 一些配置，-1表示不限制最大个数

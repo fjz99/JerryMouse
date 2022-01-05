@@ -23,8 +23,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static com.example.servlet.Constants.*;
+
 import static com.example.util.RequestUtil.normalize;
+import static com.google.common.net.HttpHeaders.*;
 
 /**
  * 处理静态资源的默认servlet
@@ -35,7 +36,7 @@ import static com.example.util.RequestUtil.normalize;
  * <p>
  * 时区是gmt时区
  * <p>
- * TODO etag、很多其他的if头、是否支持range的标志位
+ * TODO etag、很多其他的if头、是否支持range的标志位、put请求方法
  *
  * @date 2022/1/4 19:39
  */
@@ -188,6 +189,49 @@ public class DefaultServlet extends HttpServlet {
         doGet (request, response);
     }
 
+    //TODO
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        throw new ServletException ();
+    }
+
+    /**
+     * 删除资源
+     */
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        if (readOnly) {
+            resp.sendError (HttpServletResponse.SC_FORBIDDEN, "DELETE not allowed.");
+            return;
+        }
+
+        //删除
+        String relativePath = getRelativePath (req);
+        FileDirContext resources = getResources ();
+        Object lookup = resources.lookup (relativePath);
+        if (lookup == null) {
+            resp.sendError (HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        boolean ok = true;
+        if (lookup instanceof FileDirContext.FileResource) {
+            if (!((FileDirContext.FileResource) lookup).getFile ().delete ()) {
+                ok = false;
+            }
+        } else {
+            if (!((FileDirContext) lookup).getAbsoluteFile ().delete ()) {
+                ok = false;
+            }
+        }
+
+        if (ok) {
+            resp.setStatus (HttpServletResponse.SC_NO_CONTENT);
+        } else {
+            resp.sendError (HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        }
+    }
+
     private Date decodeDate(String s) {
         Date date = null;
         for (SimpleDateFormat dateFormat : formats) {
@@ -259,7 +303,7 @@ public class DefaultServlet extends HttpServlet {
                 send416 (response, resourceInfo);
                 return null;
             }
-            range.length = range.end - range.start + 1;
+            range.length = resourceInfo.length;
 
             if (!range.validate ()) {
                 send416 (response, resourceInfo);
@@ -357,7 +401,9 @@ public class DefaultServlet extends HttpServlet {
         String header = request.getHeader (LAST_MODIFIED);
         if (header != null) {
             Date date = decodeDate (header);
-            if (date != null && date.getTime () == resourceInfo.lasModifiedDate) {
+            //因为日期字符串精度有限，所以大于等于1s才有变化
+            if (date != null &&
+                    (Math.abs (date.getTime () - resourceInfo.lasModifiedDate) < 1000)) {
                 response.setStatus (HttpServletResponse.SC_NOT_MODIFIED);
                 return;
             }
@@ -373,19 +419,11 @@ public class DefaultServlet extends HttpServlet {
 
 
         ServletOutputStream stream = null;
-        PrintWriter writer = null;
         //处理响应体
         if (content) {
-            try {
-                stream = response.getOutputStream ();
-            } catch (IllegalStateException e) {
-                // If it fails, we try to get a Writer instead if we're
-                // trying to serve a text file
-                if (contentType == null || contentType.startsWith ("text")) {
-                    writer = response.getWriter ();
-                } else {
-                    throw e;
-                }
+            stream = response.getOutputStream ();
+            if (stream == null) {
+                throw new IOException ();
             }
         }
 
@@ -397,7 +435,7 @@ public class DefaultServlet extends HttpServlet {
                 Range range = ranges.get (0);
                 response.setHeader (CONTENT_RANGE,
                         String.format ("bytes %d-%d/%d", range.start, range.end, resourceInfo.length));
-                response.setContentLengthLong (range.length);
+                response.setContentLengthLong (range.end - range.start + 1);
 
                 if (content) {
                     try {
@@ -405,11 +443,7 @@ public class DefaultServlet extends HttpServlet {
                     } catch (IllegalStateException ignored) {
 
                     }
-                    if (stream != null) {
-                        copy (resourceInfo, stream, range);
-                    } else {
-                        copy (resourceInfo, writer, range);
-                    }
+                    copy (resourceInfo, stream, range);
                 }
             } else {
                 response.setHeader (CONTENT_TYPE, "multipart/byteranges; boundary=" + mimeSeparation);
@@ -419,14 +453,7 @@ public class DefaultServlet extends HttpServlet {
                     } catch (IllegalStateException ignored) {
 
                     }
-                    if (stream != null) {
-                        copy (resourceInfo, stream, ranges,
-                                contentType);
-
-                    } else {
-                        copy (resourceInfo, writer, ranges,
-                                contentType);
-                    }
+                    copy (resourceInfo, stream, ranges, contentType);
                 }
 
             }
@@ -451,41 +478,42 @@ public class DefaultServlet extends HttpServlet {
             } catch (IllegalStateException ignored) {
 
             }
-            if (stream != null) {
-                copy (resourceInfo, stream);
-            } else {
-                copy (resourceInfo, writer);
-            }
+            copy (resourceInfo, stream);
         }
 
     }
 
     /**
      * 输出多range的body,内部保证close
+     * 需要多次打开文件
      */
-    private void copy(ResourceInfo resourceInfo, ServletOutputStream stream,
-                      List<Range> ranges, String contentType) throws IOException {
-        copy (resourceInfo, new PrintWriter (stream), ranges, contentType);
-    }
-
-    private void copy(ResourceInfo resourceInfo, PrintWriter writer,
+    private void copy(ResourceInfo resourceInfo, ServletOutputStream outputStream,
                       List<Range> ranges, String contentType) throws IOException {
         try {
             for (Range range : ranges) {
-                writer.println ("--" + mimeSeparation);
+                outputStream.println ("--" + mimeSeparation);
                 //注意header冒号:后加一个空格
-                writer.println (CONTENT_RANGE + ": " +
+                outputStream.println (CONTENT_RANGE + ": " +
                         String.format ("bytes %d-%d/%d", range.start, range.end, resourceInfo.length));
                 if (contentType != null) {
-                    writer.write (CONTENT_TYPE + ": " + contentType);
+                    outputStream.println (CONTENT_TYPE + ": " + contentType);
                 }
-                writer.println ();//再加一个\r\n就和http header一样
-                copy (resourceInfo, writer, range);
+                outputStream.println ();//再加一个\r\n就和http header一样
+
+                InputStream inputStream = resourceInfo.createStream ();
+                inputStream.skip (range.start);
+                try {
+                    for (long i = range.start; i <= range.end; i++) {
+                        outputStream.write (inputStream.read ());
+                    }
+                } finally {
+                    inputStream.close ();
+                }
             }
-            writer.println ("--" + mimeSeparation + "--");
+            outputStream.println ("--" + mimeSeparation + "--");
         } finally {
             try {
-                writer.close ();
+                outputStream.close ();
             } catch (Throwable ignored) {
 
             }
@@ -525,17 +553,6 @@ public class DefaultServlet extends HttpServlet {
         }
     }
 
-    private void copy(ResourceInfo resourceInfo, PrintWriter writer)
-            throws IOException {
-
-        try (InputStreamReader reader = new InputStreamReader (resourceInfo.getStream ())) {
-            IOUtils.copy (reader, writer);
-        } finally {
-            writer.close ();
-        }
-
-    }
-
     private void copy(ResourceInfo resourceInfo, ServletOutputStream ostream,
                       Range range)
             throws IOException {
@@ -543,15 +560,6 @@ public class DefaultServlet extends HttpServlet {
         InputStream resourceInputStream = resourceInfo.getStream ();
         copyRange (resourceInputStream, ostream, range.start, range.end);
 
-    }
-
-    private void copy(ResourceInfo resourceInfo, PrintWriter writer,
-                      Range range)
-            throws IOException {
-
-        InputStream resourceInputStream = resourceInfo.getStream ();
-        Reader reader = new InputStreamReader (resourceInputStream);
-        copyRange (reader, writer, range.start, range.end);
     }
 
     /**
@@ -572,31 +580,6 @@ public class DefaultServlet extends HttpServlet {
         } finally {
             try {
                 inputStream.close ();
-            } catch (IOException ignored) {
-
-            }
-        }
-
-    }
-
-    /**
-     * 文本资源
-     */
-    private void copyRange(Reader reader,
-                           Writer writer,
-                           long start, long end) throws IOException {
-
-        try {
-            reader.skip (start);
-            try (BufferedWriter stream = new BufferedWriter (writer)) {
-
-                for (long i = start; i <= end; i++) {
-                    stream.write (reader.read ());
-                }
-            }
-        } finally {
-            try {
-                reader.close ();
             } catch (IOException ignored) {
 
             }
@@ -790,6 +773,9 @@ public class DefaultServlet extends HttpServlet {
     protected static class Range {
         public long start;
         public long end;
+        /**
+         * length指的是总长度
+         */
         public long length;
 
         public boolean validate() {
@@ -899,13 +885,17 @@ public class DefaultServlet extends HttpServlet {
             if (is != null)
                 return is;
             if (file != null)
-                return (file.streamContent ());
+                return file.streamContent ();
             else
                 return null;
         }
 
         public void setStream(InputStream is) {
             this.is = is;
+        }
+
+        public InputStream createStream() throws IOException {
+            return file.streamContent ();
         }
 
     }

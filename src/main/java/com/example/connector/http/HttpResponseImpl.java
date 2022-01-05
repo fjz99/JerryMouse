@@ -13,6 +13,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.example.connector.http.Constants.*;
+import static com.google.common.net.HttpHeaders.*;
+
 
 /**
  * 目前只有1.1版本
