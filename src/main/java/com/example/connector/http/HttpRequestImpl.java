@@ -17,6 +17,8 @@ import javax.servlet.http.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.Principal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,6 +32,11 @@ import static com.example.connector.http.Constants.*;
  */
 @Slf4j
 public class HttpRequestImpl extends AbstractRequest implements HttpRequest, HttpServletRequest {
+    protected static final SimpleDateFormat[] formats = {
+            new SimpleDateFormat ("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US),
+            new SimpleDateFormat ("EEEEEE, dd-MMM-yy HH:mm:ss zzz", Locale.US),
+            new SimpleDateFormat ("EEE MMMM d HH:mm:ss yyyy", Locale.US)
+    };
     protected final Connector connector;
     protected Map<String, List<String>> headers = new ConcurrentHashMap<> ();
     protected Map<String, Cookie> cookies = new ConcurrentHashMap<> ();
@@ -189,6 +196,18 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
         this.decodedRequestURI = uri;
     }
 
+    private Date decodeDate(String s) {
+        Date date = null;
+        for (SimpleDateFormat dateFormat : formats) {
+            try {
+                date = dateFormat.parse (s);
+            } catch (ParseException ignored) {
+
+            }
+        }
+        return date;
+    }
+
     /**
      * todo
      * 暂时不实现
@@ -205,7 +224,10 @@ public class HttpRequestImpl extends AbstractRequest implements HttpRequest, Htt
 
     @Override
     public long getDateHeader(String name) {
-        return 0;
+        return Optional.ofNullable (getHeader (name))
+                .map (this::decodeDate)
+                .map (Date::getTime)
+                .orElse (-1L);
     }
 
     @Override

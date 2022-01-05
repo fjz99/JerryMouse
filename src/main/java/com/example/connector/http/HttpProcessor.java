@@ -45,7 +45,8 @@ public final class HttpProcessor extends LifecycleBase {
     private static final Map<String, String> defaultHeaders = new HashMap<> ();
 
     static {
-        defaultHeaders.put (CONTENT_TYPE, APPLICATION_JSON);
+        //默认数据类型是text/plain，而不是json。。
+        defaultHeaders.put (CONTENT_TYPE, HttpHeaderValues.TEXT_PLAIN.toString ());
         defaultHeaders.put (SERVER, SERVER_INFO);
         defaultHeaders.put (CONNECTION, KEEP_ALIVE);
     }
@@ -401,7 +402,7 @@ public final class HttpProcessor extends LifecycleBase {
         }
 
         if (response.getHeaders (DATE) == null) {
-            response.setHeader (DATE, LocalDateTime.now ().format (DATE_TIME_FORMATTER));
+            response.setHeader (DATE, DATE_TIME_FORMATTER.format (new Date (System.currentTimeMillis ())));
         }
 
         if (response.getHeaders (CONTENT_LENGTH) == null) {
@@ -459,6 +460,10 @@ public final class HttpProcessor extends LifecycleBase {
             String s = request.getContextPath ();
             if (!s.startsWith ("/")) {
                 s = "/" + s;
+            }
+            if (!s.equals ("/test")) {
+                System.out.println (s);
+                System.exit (1);
             }
             cookie.setPath (s);//session存在说明context存在
             response.addCookie (cookie);

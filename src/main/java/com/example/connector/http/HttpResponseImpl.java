@@ -26,8 +26,6 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
     protected static final TimeZone zone = TimeZone.getDefault ();
     private static final FullHttpResponse DEFAULT =
             new DefaultFullHttpResponse (HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-    protected final SimpleDateFormat format =
-            new SimpleDateFormat (DATE_TIME_FORMAT, locale);
     protected Map<String, List<String>> headers = new ConcurrentHashMap<> ();
     protected Map<String, Cookie> cookies = new ConcurrentHashMap<> ();
     protected boolean suspend;
@@ -285,12 +283,12 @@ public class HttpResponseImpl extends AbstractResponse implements HttpResponse, 
 
     @Override
     public void setDateHeader(String name, long date) {
-        setHeader (name, format.format (new Date (date)));
+        setHeader (name, DATE_TIME_FORMATTER.format (new Date (date)));
     }
 
     @Override
     public void addDateHeader(String name, long date) {
-        addHeader (name, format.format (new Date (date)));
+        addHeader (name, DATE_TIME_FORMATTER.format (new Date (date)));
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.example.resource.ResourceAttributes;
 import com.example.util.MD5Encoder;
 import com.example.util.URLEncoder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -99,6 +100,9 @@ public class DefaultServlet extends HttpServlet {
      * ？？？
      */
     protected int output = 2048;
+    protected boolean setCacheControl = true;
+    protected long maxAge = 60 * 30;//30分钟
+    protected String cacheControlString = "max-age=" + maxAge;
 
     /**
      * 解析web.xml中可以配置的servlet init参数
@@ -201,7 +205,7 @@ public class DefaultServlet extends HttpServlet {
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         if (readOnly) {
-            resp.sendError (HttpServletResponse.SC_FORBIDDEN, "DELETE not allowed.");
+            resp.sendError (HttpServletResponse.SC_METHOD_NOT_ALLOWED, "DELETE not allowed.");
             return;
         }
 
@@ -214,18 +218,14 @@ public class DefaultServlet extends HttpServlet {
             return;
         }
 
-        boolean ok = true;
+        File file;
         if (lookup instanceof FileDirContext.FileResource) {
-            if (!((FileDirContext.FileResource) lookup).getFile ().delete ()) {
-                ok = false;
-            }
+            file = ((FileDirContext.FileResource) lookup).getFile ();
         } else {
-            if (!((FileDirContext) lookup).getAbsoluteFile ().delete ()) {
-                ok = false;
-            }
+            file = ((FileDirContext) lookup).getAbsoluteFile ();
         }
 
-        if (ok) {
+        if (FileUtils.deleteQuietly (file)) {
             resp.setStatus (HttpServletResponse.SC_NO_CONTENT);
         } else {
             resp.sendError (HttpServletResponse.SC_METHOD_NOT_ALLOWED);
@@ -247,6 +247,7 @@ public class DefaultServlet extends HttpServlet {
     /**
      * 从头部解析出range列表
      * range头部问题不会发送400，而是416或200
+     * 如果发生改变了就返回200，否则就会按照range返回206或416
      *
      * @return 如果根本没有range，或者range不合法，就返回null并且设置响应码
      */
@@ -284,12 +285,19 @@ public class DefaultServlet extends HttpServlet {
         List<Range> ranges = new ArrayList<> ();
         header = header.substring (6);
         for (String token : header.split (",")) {
+            token = token.trim ();//逗号后有空格
             if (StringUtils.countMatches (token, '-') != 1) {
                 send416 (response, resourceInfo);
                 return null;
             }
 
             Range range = new Range ();
+            //支持0-空，表示到最后
+            int index = token.indexOf ('-');
+            if (index == token.length () - 1) {
+                token = token + (resourceInfo.length - 1);
+            }
+
             String[] split = token.split ("-");
             try {
                 range.start = Long.parseLong (split[0]);
@@ -385,35 +393,30 @@ public class DefaultServlet extends HttpServlet {
                 response.sendError (HttpServletResponse.SC_NOT_FOUND, request.getRequestURI ());
                 return;
             }
-        }
-
-        //todo etag
-        //contentType,dir的content type=null
-        String contentType;
-        contentType = getServletContext ().getMimeType (resourceInfo.path);
-        if (contentType != null) {
-            response.setContentType (contentType);
-        }
-
-
-        //lastmodified
-        response.setHeader (LAST_MODIFIED, resourceInfo.httpDate);
-        String header = request.getHeader (LAST_MODIFIED);
-        if (header != null) {
-            Date date = decodeDate (header);
-            //因为日期字符串精度有限，所以大于等于1s才有变化
-            if (date != null &&
-                    (Math.abs (date.getTime () - resourceInfo.lasModifiedDate) < 1000)) {
-                response.setStatus (HttpServletResponse.SC_NOT_MODIFIED);
-                return;
+        } else {
+            //todo etag
+            //contentType,dir的content type=null
+            String contentType;
+            contentType = getServletContext ().getMimeType (resourceInfo.path);
+            if (contentType != null) {
+                response.setContentType (contentType);
             }
-        }
 
-        if (!resourceInfo.collection) {
             if (acceptRanges) {
                 response.setHeader (ACCEPT_RANGES, "bytes");
             } else {
                 response.setHeader (ACCEPT_RANGES, "none");
+            }
+
+            //lastmodified
+            response.setHeader (LAST_MODIFIED, resourceInfo.httpDate);
+            response.setHeader (ETAG, getETag (resourceInfo));
+            if (setCacheControl) {
+                response.setHeader (CACHE_CONTROL, cacheControlString);
+            }
+
+            if (!checkIfHeaders (request, response, resourceInfo)) {
+                return;
             }
         }
 
@@ -453,6 +456,7 @@ public class DefaultServlet extends HttpServlet {
                     } catch (IllegalStateException ignored) {
 
                     }
+                    String contentType = getServletContext ().getMimeType (resourceInfo.path);
                     copy (resourceInfo, stream, ranges, contentType);
                 }
 
@@ -462,17 +466,17 @@ public class DefaultServlet extends HttpServlet {
 
         //剩下的要么是collection，要么是没有range(或者range不合法)的普通文件
         response.setStatus (HttpServletResponse.SC_OK);
-        if (resourceInfo.collection && content) {
-            response.setContentType ("text/html;charset=UTF-8");
-            resourceInfo.setStream
-                    (render (request.getContextPath (), resourceInfo));
-        }
-
-        if (!resourceInfo.collection) {
-            response.setContentLengthLong (resourceInfo.length);
-        }
-
         if (content) {
+            if (resourceInfo.collection) {
+                response.setContentType ("text/html;charset=UTF-8");
+                resourceInfo.setStream
+                        (render (request.getContextPath (), resourceInfo));
+            }
+
+            if (!resourceInfo.collection) {
+                response.setContentLengthLong (resourceInfo.length);
+            }
+
             try {
                 response.setBufferSize (output);
             } catch (IllegalStateException ignored) {
@@ -518,6 +522,117 @@ public class DefaultServlet extends HttpServlet {
 
             }
         }
+    }
+
+    protected String getETag(ResourceInfo resourceInfo) {
+        if (!StringUtils.isEmpty (resourceInfo.strongETag)) {
+            return resourceInfo.strongETag;
+        } else if (!StringUtils.isEmpty (resourceInfo.weakETag)) {
+            return resourceInfo.weakETag;
+        } else {
+            return "W/\"" + resourceInfo.length + "-"
+                    + resourceInfo.lasModifiedDate + "\"";
+        }
+    }
+
+    protected boolean checkIfHeaders(HttpServletRequest request, HttpServletResponse response,
+                                     ResourceInfo resourceInfo) throws IOException {
+
+        return checkIfMatch (request, response, resourceInfo)
+                && checkIfModifiedSince (request, response, resourceInfo)
+                && checkIfNoneMatch (request, response, resourceInfo)
+                && checkIfUnmodifiedSince (request, response, resourceInfo);
+
+    }
+
+    private boolean checkIfMatch(HttpServletRequest request, HttpServletResponse response,
+                                 ResourceInfo resourceInfo) throws IOException {
+        String header = request.getHeader (IF_MATCH);
+        String etag = getETag (resourceInfo);
+        boolean match = false;
+
+        if (header != null) {
+            if (header.equals ("*")) {
+                match = resourceInfo.exists;//存在就可以匹配
+            } else {
+                //可能有逗号分隔的多个
+                for (String s : header.split (",")) {
+                    if (s.trim ().equals (etag)) {
+                        match = true;
+                        break;
+                    }
+                }
+            }
+            if (!match) {
+                response.sendError (HttpServletResponse.SC_PRECONDITION_FAILED);
+            }
+            return match;
+        } else return true;
+    }
+
+    private boolean checkIfModifiedSince(HttpServletRequest request, HttpServletResponse response,
+                                         ResourceInfo resourceInfo) throws IOException {
+        long header = request.getDateHeader (IF_MODIFIED_SINCE);
+        long modifiedTime = resourceInfo.lasModifiedDate;
+
+        if (header != -1) {
+            //if-none-match优先
+            if ((request.getHeader (IF_NONE_MATCH) == null) &&
+                    Math.abs (modifiedTime - header) <= 1000) {
+                response.sendError (HttpServletResponse.SC_NOT_MODIFIED);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean checkIfUnmodifiedSince(HttpServletRequest request, HttpServletResponse response,
+                                           ResourceInfo resourceInfo) throws IOException {
+        long header = request.getDateHeader (IF_UNMODIFIED_SINCE);
+        long modifiedTime = resourceInfo.lasModifiedDate;
+
+        if (header != -1) {
+            //if-none-match优先
+            if ((request.getHeader (IF_MATCH) == null) &&
+                    Math.abs (modifiedTime - header) > 1000) {
+                response.sendError (HttpServletResponse.SC_PRECONDITION_FAILED);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 注意如果是GET和HEAD的话，条件不满足返回304（用于cache），否则条件不满足返回412（用于创建文件）
+     */
+    private boolean checkIfNoneMatch(HttpServletRequest request, HttpServletResponse response,
+                                     ResourceInfo resourceInfo) throws IOException {
+        String header = request.getHeader (IF_NONE_MATCH);
+        String etag = getETag (resourceInfo);
+        boolean nonMatch = true;
+
+        if (header != null) {
+            if (header.equals ("*")) {
+                nonMatch = !resourceInfo.exists;//如果不存在这个资源，那就能保证无法匹配*
+            } else {
+                for (String s : header.split (",")) {
+                    if (s.trim ().equals (etag)) {
+                        nonMatch = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!nonMatch) {
+                String method = request.getMethod ().toLowerCase ();
+                if (method.equals ("get") || method.equals ("head")) {
+                    response.sendError (HttpServletResponse.SC_NOT_MODIFIED);
+                } else {
+                    response.sendError (HttpServletResponse.SC_PRECONDITION_FAILED);
+                }
+            }
+            return nonMatch;
+        } else return true;
     }
 
     /**
